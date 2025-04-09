@@ -1,0 +1,2 @@
+from vclibpy.components.heat_exchangers import MovingBoundaryNTUCondenser
+help(MovingBoundaryNTUCondenser)
