@@ -28,7 +28,9 @@ class TCStandardCycle(BaseCycle):
         self.compressor = compressor
         self.expansion_valve = expansion_valve
 
-    def get_all_components(self):
+# Hier wird meines Verständnisses nach eine Methode genutzt, die durch das return super() erstmal die Komponenten aus dem BaseCycle holt und dann noch die aus dem StandardCycle anhängt
+
+    def get_all_components(self):                                   #get_all_components is a methode in the class TCStandardCycle
         return super().get_all_components() + [
             self.compressor,
             self.expansion_valve
