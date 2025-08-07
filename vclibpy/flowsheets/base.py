@@ -667,6 +667,22 @@ class BaseCycle:
 
 class BaseCycleTC(BaseCycle):
 
+    def set_expansion_valve_based_on_q4(self, p_eva: float, p_con: float, inputs: Inputs):
+        """
+        Calculate the outlet and inlet state of the expansion valve based on the given (or iterated) quality of the refrigerant in state 4.
+
+        Args:
+            p_eva (float): Evaporation pressure
+            inputs (Inputs): Inputs with quality
+        """
+
+        q4 = inputs.q4
+
+        self.expansion_valve.state_outlet = self.med_prop.calc_state("PQ", p_eva, q4)
+        h4 = self.expansion_valve.state_outlet.h
+
+        self.expansion_valve.state_inlet = self.med_prop.calc_state("PH", p_con, h4)
+
     def calc_steady_state(self, inputs: Inputs, fluid: str = None, **kwargs):
 
         start_time_warning = time.time()
@@ -727,11 +743,11 @@ class BaseCycleTC(BaseCycle):
                             return self.set_default_state(inputs, start_time, "LoopError")
                         history_inputs.append([n_next, p_con_next, T_eva_next])
 
-                    if (time.time() - start_time_warning) > 60:
+                    if (time.time() - start_time_warning) > 60000:
                         logger.error("RunTimeWarning")
                         start_time_warning = time.time()
 
-                    if time.time() - start_time > 90:
+                    if time.time() - start_time > 90000:
                         logger.error("RunTimeError")
                         return self.set_default_state(inputs, start_time, "RunTimeError")
 
