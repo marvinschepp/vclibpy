@@ -150,8 +150,7 @@ class Compressor(BaseComponent):
             float: Refrigerant mass flow rate.
         """
         if lambda_h is None:
-            lambda_h = max(0.01,self.get_lambda_h(inputs=inputs,
-                                         p_outlet=None))
+            lambda_h = max(0.01,self.get_lambda_h(inputs=inputs))
 
         V_flow_ref = (
                 lambda_h *
