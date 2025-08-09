@@ -28,6 +28,20 @@ class StandardCycleTC(BaseCycleTC):
         self.compressor = compressor
         self.expansion_valve = expansion_valve
 
+    def set_expansion_valve_based_on_q4(self, p_eva: float, p_con: float, inputs: Inputs):
+        """
+        Calculate the outlet and inlet state of the expansion valve based on the given (or iterated) quality of the refrigerant in state 4.
+
+        Args:
+            p_eva (float): Evaporation pressure
+            inputs (Inputs): Inputs with quality
+        """
+
+        self.expansion_valve.state_outlet = self.med_prop.calc_state("PQ", p_eva, inputs.q4)
+        h4 = self.expansion_valve.state_outlet.h
+
+        self.expansion_valve.state_inlet = self.med_prop.calc_state("PH", p_con, h4)
+
     def get_all_components(self):
         return super().get_all_components() + [
             self.compressor,
@@ -55,8 +69,6 @@ class StandardCycleTC(BaseCycleTC):
                "1_q1":  self.med_prop.calc_state("PQ", self.compressor.state_inlet.p, 1),
                "2": self.compressor.state_outlet,
                "2_s": self.med_prop.calc_state("PS", self.compressor.state_outlet.p, self.compressor.state_inlet.s),
-               "2_q1": self.med_prop.calc_state("PQ", self.compressor.state_outlet.p, 1),
-               "3_q0": self.med_prop.calc_state("PQ", self.compressor.state_outlet.p, 0),
                "3": self.condenser.state_outlet,
                "4": self.evaporator.state_inlet
                }
@@ -67,8 +79,6 @@ class StandardCycleTC(BaseCycleTC):
                "1_q1",
                "2",
                "2_s",
-               "2_q1",
-               "3_q0",
                "3",
                "4"
                ]
@@ -77,6 +87,9 @@ class StandardCycleTC(BaseCycleTC):
 
         # self.expansion_valve.calc_outlet(p_outlet=p_1)
         # self.set_condenser_outlet_based_on_subcooling(p_con=p_2, inputs=inputs)
+
+
+
         self.set_expansion_valve_based_on_q4(p_eva=p_1, p_con=p_2, inputs=inputs)
         self.condenser.state_outlet = self.expansion_valve.state_inlet
         self.evaporator.state_inlet = self.expansion_valve.state_outlet
@@ -119,6 +132,8 @@ class StandardCycleTC(BaseCycleTC):
         self.condenser.m_flow = self.compressor.m_flow
         self.evaporator.m_flow = self.compressor.m_flow
         self.expansion_valve.m_flow = self.compressor.m_flow
+
+
 
         inputs.set(
             name="Q_con",
