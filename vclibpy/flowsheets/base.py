@@ -738,9 +738,9 @@ class BaseCycleTC(BaseCycle):
                     logger.warning(f"q4 exits reasonable area: {q4_next}. Exiting COP optimization")
                     break
 
-                history_inputs = []
 
                 while True:
+                    history_inputs = []
                     T_eva_next = T_eva_start
                     step_T_eva = 2
                     while True:
