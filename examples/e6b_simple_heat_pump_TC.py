@@ -1,7 +1,38 @@
 # # Example for a heat pump with a standard cycle
 from vclibpy.datamodels import Inputs, FlowsheetState
 import numpy as np
+import pandas as pd
+from pathlib import Path
+from datetime import datetime
 
+def save_state_to_excel(fs_state: FlowsheetState, inputs: Inputs, save_path: Path):
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    t_eva_in_c = int(inputs.T_eva_in - 273.15)
+    t_con_in_c = int(inputs.T_con_in - 273.15)
+
+    file_name = f"{t_eva_in_c}_{t_con_in_c}_{timestamp}.xlsx"
+    full_path = save_path / file_name
+
+    data_list = []
+    for key, state_var in fs_state.items():
+        data_list.append({
+            "Parameter": key,
+            "Value": state_var.value,
+            "Unit": state_var.unit,
+            "Description": state_var.description
+        })
+
+    df = pd.DataFrame(data_list)
+
+
+    save_path.mkdir(parents=True, exist_ok=True)
+
+    print(f"DEBUG: Attempting to save to path: {repr(str(full_path))}")
+
+    df.to_excel(full_path, index=False, engine='openpyxl')
+
+    print(f"✅ Results successfully saved to: {full_path}")
 
 def main():
     from vclibpy.flowsheets import BaseCycle, StandardCycleTC
@@ -67,6 +98,9 @@ def main():
 
 
     fs_state = heat_pump.calc_steady_state(inputs=inputs)
+    #print(fs_state)
+    results_path = Path("results")
+    save_state_to_excel(fs_state=fs_state, inputs=inputs, save_path=results_path)
 
 
 
