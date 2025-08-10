@@ -667,8 +667,6 @@ class BaseCycle:
 
 class BaseCycleTC(BaseCycle):
 
-
-
     def calc_steady_state(self, inputs: Inputs, fluid: str = None, **kwargs):
 
         start_time_warning = time.time()
@@ -703,7 +701,7 @@ class BaseCycleTC(BaseCycle):
             n_input = deepcopy(inputs.n)
             n_next = inputs.n
             n_max = 100 * n_input / inputs.n_rel
-        history_inputs = []
+
         while True:
             if inputs.fix_speed == float(True):
                 inputs.set(
@@ -713,17 +711,34 @@ class BaseCycleTC(BaseCycle):
                     description="Relative compressor speed"
                 )
                 fs_state.set(name="relative_compressor_speed_internal", value=n_next)
-            p_con_next = p_con_start
-            step_p_con = 0.1*(10**5)
+
             adjust_n = False
             temp_num_iteration = 0
 
-            q4_next = 0.2
+            q4_next = 0.4
+            q4_step = 0.05
+            min_q4_step = 0.0001
             last_cop = 0
-            q4_step = 0.1
-            while True:
+            last_q4 = 0
+            last_differential = 0
+            max_iter_q4 = 50
+            iter_q4 = 0
+
+            best_cop = 0.0
+            best_q4 = q4_next
+
+            while iter_q4 < max_iter_q4 and abs(q4_step) > min_q4_step:
+                iter_q4 += 1
                 inputs.q4 = q4_next
 
+                p_con_next = p_con_start
+                step_p_con = 1 * (10 ** 5)
+
+                if not 0.325 < q4_next < 0.6:
+                    logger.warning(f"q4 exits reasonable area: {q4_next}. Exiting COP optimization")
+                    break
+
+                history_inputs = []
 
                 while True:
                     T_eva_next = T_eva_start
@@ -823,18 +838,18 @@ class BaseCycleTC(BaseCycle):
                             break
                         continue
 
-                _cop = self.condenser.calc_Q_flow() / self.calc_electrical_power(fs_state=fs_state, inputs=inputs)
+                current_cop = self.condenser.calc_Q_flow() / self.calc_electrical_power(fs_state=fs_state, inputs=inputs)
 
-                if _cop > last_cop:
-                    q4_next += q4_step
-                    last_cop = _cop
-                    continue
-                q4_next -= q4_step
-                q4_step /=10
-                q4_next += q4_step
-                if q4_step < 0.001:
-                    break
-                continue
+                if current_cop > best_cop:
+                    best_cop = current_cop
+                    best_q4 = q4_next
+
+                    q4_next = best_q4 + q4_step
+
+                else:
+                    q4_step *= -1
+                    q4_step /= 2
+                    q4_next = best_q4 + q4_step
 
             if inputs.fix_speed == float(False):
                 break
