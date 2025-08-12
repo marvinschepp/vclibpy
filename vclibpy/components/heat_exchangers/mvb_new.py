@@ -430,7 +430,7 @@ class MVB_Condenser(BasicHX, abc.ABC):
 
         return error, pinch
 
-class MVB_Evaporator(BasicHX, abc.ABC):
+class MVB_Evaporator(BasicHX):
 
     def calc(self, inputs: Inputs, fs_state: FlowsheetState) -> (float, float):
         self.m_flow_secondary = inputs.m_flow_eva
@@ -586,7 +586,7 @@ class MVB_Evaporator(BasicHX, abc.ABC):
         return error, pinch
 
 
-class GasCooler(BasicHX, abc.ABC):
+class GasCooler(BasicHX):
 
     def calc(self, inputs: Inputs, fs_state: FlowsheetState) -> (float, float):
         dh_ref = self.state_inlet.h - self.state_outlet.h
@@ -616,6 +616,14 @@ class GasCooler(BasicHX, abc.ABC):
         )
 
         error = (self.A / A_calc - 1) * 100
+
+        fs_state.set(name="Con_dh", value=-0.001 * (self.state_outlet.h - self.state_inlet.h), unit="kJ/kg",
+                     description="Enthalpy difference Evaporator")
+        fs_state.set(name="Con_A", value=A_calc, unit="m2",
+                     description="Area for heat exchange in condenser")
+        fs_state.set(name="Con_Pinch", value=pinch, unit="K",
+                     description="minimal temperature difference in gas cooler")
+
 
         return error, pinch
 
