@@ -1,3 +1,5 @@
+import numpy as np
+
 from vclibpy.flowsheets import BaseCycleTC
 from vclibpy.datamodels import FlowsheetState, Inputs
 from vclibpy.components.compressors import Compressor
@@ -16,7 +18,7 @@ class StandardCycleTC(BaseCycleTC):
     4. Before Evaporator, after EV
     """
 
-    flowsheet_name = "Standard"
+    flowsheet_name = "Standard_TC"
 
     def __init__(
             self,
@@ -48,20 +50,30 @@ class StandardCycleTC(BaseCycleTC):
             self.expansion_valve
         ]
 
-    def get_states_in_order_for_plotting(self):
-        return [
-            self.evaporator.state_inlet,
-            self.med_prop.calc_state("PQ", self.evaporator.state_inlet.p, 1),
-            self.evaporator.state_outlet,
-            self.compressor.state_inlet,
-            self.compressor.state_outlet,
-            self.condenser.state_inlet,
-            self.med_prop.calc_state("PQ", self.condenser.state_inlet.p, 1),
-            self.med_prop.calc_state("PQ", self.condenser.state_inlet.p, 0),
-            self.condenser.state_outlet,
-            self.expansion_valve.state_inlet,
-            self.expansion_valve.state_outlet,
-        ]
+    def get_states_in_order_for_plotting(self, h_steps=20):
+        p_eva = self.evaporator.state_inlet.p
+        p_con = self.condenser.state_inlet.p
+        state_1 = self.evaporator.state_outlet
+        state_2 = self.compressor.state_outlet
+        state_3 = self.condenser.state_outlet
+        state_4 = self.expansion_valve.state_outlet
+
+        plotting_states = []
+        plotting_states.append(state_4)
+        plotting_states.append(self.med_prop.calc_state("PQ", p_eva, 1))
+        plotting_states.append(state_1)
+        plotting_states.append(state_2)
+        h_values_gc = np.linspace(state_2.h, state_3.h, h_steps)[1:-1]
+        for h in h_values_gc:
+            try:
+                plotting_states.append(self.med_prop.calc_state("PH", p_con, h))
+            except TypeError:
+                pass
+        plotting_states.append(state_3)
+        plotting_states.append(state_4)
+
+        return plotting_states
+
 
     def get_states(self):
 
