@@ -1,5 +1,6 @@
 # # Example for a heat pump with a standard cycle
 from vclibpy.datamodels import Inputs, FlowsheetState
+from vclibpy.flowsheets import BaseCycleTC, StandardCycleTC
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -36,24 +37,10 @@ def save_state_to_excel(fs_state: FlowsheetState, inputs: Inputs, save_path: Pat
 
 def main():
     from vclibpy.flowsheets import BaseCycle, StandardCycleTC
-    from vclibpy.components.heat_exchangers import moving_boundary_ntu, mvb_new
+    from vclibpy.components.heat_exchangers import mvb_new
     from vclibpy.components.heat_exchangers import heat_transfer
     condenser = mvb_new.GasCooler(
-        A=0.8088,#62.929,
-        secondary_medium="air",
-        flow_type="counter",
-        ratio_outer_to_inner_area=1,#14.569,
-        model_approach="ntu",
-        two_phase_heat_transfer=heat_transfer.constant.ConstantTwoPhaseHeatTransfer(alpha=2400),
-        gas_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=1200),
-        wall_heat_transfer=heat_transfer.wall.WallTransfer(lambda_=np.inf, thickness=1),
-        liquid_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=1500),
-        secondary_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=np.inf),#2000),#54.99),
-        n_elemente=50
-    )
-
-    evaporator = mvb_new.MVB_Evaporator(
-        A=0.2186,
+        A=0.986125012,
         secondary_medium="air",
         flow_type="counter",
         ratio_outer_to_inner_area=1,
@@ -61,8 +48,22 @@ def main():
         two_phase_heat_transfer=heat_transfer.constant.ConstantTwoPhaseHeatTransfer(alpha=2400),
         gas_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=1200),
         wall_heat_transfer=heat_transfer.wall.WallTransfer(lambda_=np.inf, thickness=1),
-        liquid_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=1500),#5000),
-        secondary_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=np.inf)#500)
+        liquid_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=1500),
+        secondary_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=np.inf),
+        n_elemente=50
+    )
+
+    evaporator = mvb_new.MVB_Evaporator(
+        A=0.243691842981203,
+        secondary_medium="air",
+        flow_type="counter",
+        ratio_outer_to_inner_area=1,
+        model_approach="ntu",
+        two_phase_heat_transfer=heat_transfer.constant.ConstantTwoPhaseHeatTransfer(alpha=3000),
+        gas_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=1200),
+        wall_heat_transfer=heat_transfer.wall.WallTransfer(lambda_=np.inf, thickness=1),
+        liquid_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=1500),
+        secondary_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=np.inf)
     )
     from vclibpy.components.expansion_valves import Bernoulli
     expansion_valve = Bernoulli(A=0.1)
@@ -70,14 +71,14 @@ def main():
     from vclibpy.components.compressors import ConstantEffectivenessCompressor
     compressor = ConstantEffectivenessCompressor(
         N_max=100,
-        V_h=8.34e-6,
+        V_h=6.51601264412189E-06,
         eta_mech=1,
         eta_isentropic=0.7,
         lambda_h=0.9
     )
 
     # Now, we can plug everything into the flowsheet:
-    heat_pump = StandardCycleTC(
+    flowsheet = StandardCycleTC(
         evaporator=evaporator,
         condenser=condenser,
         fluid="CO2",
@@ -85,23 +86,28 @@ def main():
         expansion_valve=expansion_valve,
     )
     inputs = Inputs(
-        T_eva_in=0 + 273.15,
+        fix_speed=False,
+        fix_m_flow_con=False,
+        fix_m_flow_eva=False,
+        T_eva_in=10 + 273.15,
         T_con_in=25 + 273.15,
         dT_eva_superheating=10,
         dT_con_subcooling=0,
-        m_flow_eva=1,
-        m_flow_con=1,
-        n=1
+        T_eva_out=10 + 273.15 -5,
+        T_con_out=273.15+40,
+        Q_con=10000,  # W
     )
 
     #inputs.set(name="q4", value=0.3, description="Quality of refrigerant at exp_valve outlet")
 
-
-    fs_state = heat_pump.calc_steady_state(inputs=inputs)
-    #print(fs_state)
     results_path = Path("results")
-    save_state_to_excel(fs_state=fs_state, inputs=inputs, save_path=results_path)
+    results_path.mkdir(parents=True, exist_ok=True)
+    print(f"Saving results in '{results_path.absolute()}'.")
 
+    fs_state = flowsheet.calc_steady_state(inputs=inputs, save_path_plots=results_path)
+    #print(fs_state)
+
+    save_state_to_excel(fs_state=fs_state, inputs=inputs, save_path=results_path)
 
 
 if __name__ == "__main__":
