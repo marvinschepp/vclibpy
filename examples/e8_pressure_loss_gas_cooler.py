@@ -5,9 +5,9 @@ def main():
 
     ref_prop = RefProp(fluid_name="CO2")
 
-    #help(ref_prop.calc_state)
-    state_in = ref_prop.calc_state("PT", 75e5, 75.15 + 273.15)
-    state_out = ref_prop.calc_state("PT", 75e5, 31.95 + 273.15)
+    help(ref_prop.calc_transport_properties)
+    state_in = ref_prop.calc_state("PT", 84.533e5, 77.27 + 273.15)
+    state_out = ref_prop.calc_state("PT", 84.533e5, 31.39 + 273.15)
     transport_properties_in = ref_prop.calc_transport_properties(state=state_in)
     transport_properties_out = ref_prop.calc_transport_properties(state=state_out)
     rho_mean = (state_in.d + state_out.d) / 2
@@ -18,7 +18,7 @@ def main():
     num_tubes_total = 220
     num_passes = 54
     tubes_per_pass = num_tubes_total / num_passes
-    m_flow = 0.041269133996131344
+    m_flow = 0.0848643062000998
     m_flow_per_tube = m_flow / tubes_per_pass
     l_total_flow_path = l_tube * num_passes
 
@@ -86,5 +86,5 @@ def conservative_pressure_loss():
         print(f"delta_p = {delta_p / 10e5} bar")
 
 if __name__ == "__main__":
-    #main()
-    conservative_pressure_loss()
+    main()
+    #conservative_pressure_loss()
