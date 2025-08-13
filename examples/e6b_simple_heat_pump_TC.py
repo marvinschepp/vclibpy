@@ -40,7 +40,7 @@ def main():
     from vclibpy.components.heat_exchangers import mvb_new
     from vclibpy.components.heat_exchangers import heat_transfer
     condenser = mvb_new.GasCooler(
-        A=0.986125012,
+        A=1.92016779139578,#0.986125012,
         secondary_medium="air",
         flow_type="counter",
         ratio_outer_to_inner_area=1,
@@ -50,11 +50,12 @@ def main():
         wall_heat_transfer=heat_transfer.wall.WallTransfer(lambda_=np.inf, thickness=1),
         liquid_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=1500),
         secondary_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=np.inf),
-        n_elemente=50
+        n_elemente=50,
+        use_pressure_loss=True
     )
 
     evaporator = mvb_new.MVB_Evaporator(
-        A=0.243691842981203,
+        A=0.634696328041979,
         secondary_medium="air",
         flow_type="counter",
         ratio_outer_to_inner_area=1,
@@ -63,7 +64,8 @@ def main():
         gas_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=1200),
         wall_heat_transfer=heat_transfer.wall.WallTransfer(lambda_=np.inf, thickness=1),
         liquid_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=1500),
-        secondary_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=np.inf)
+        secondary_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=np.inf),
+        use_pressure_loss=False,
     )
     from vclibpy.components.expansion_valves import Bernoulli
     expansion_valve = Bernoulli(A=0.1)
@@ -71,7 +73,7 @@ def main():
     from vclibpy.components.compressors import ConstantEffectivenessCompressor
     compressor = ConstantEffectivenessCompressor(
         N_max=100,
-        V_h=6.51601264412189E-06,
+        V_h=8.27861415459033e-6,
         eta_mech=1,
         eta_isentropic=0.7,
         lambda_h=0.9
@@ -86,16 +88,19 @@ def main():
         expansion_valve=expansion_valve,
     )
     inputs = Inputs(
-        fix_speed=False,
-        fix_m_flow_con=False,
-        fix_m_flow_eva=False,
-        T_eva_in=10 + 273.15,
-        T_con_in=25 + 273.15,
+        #fix_speed=False,
+        #fix_m_flow_con=False,
+        #fix_m_flow_eva=False,
+        T_eva_in=25.8006104 + 273.15,#10 + 273.15,
+        T_con_in=26.9513359 + 273.15,#25 + 273.15,
         dT_eva_superheating=10,
         dT_con_subcooling=0,
-        T_eva_out=10 + 273.15 -5,
-        T_con_out=273.15+40,
-        Q_con=10000,  # W
+        m_flow_eva=1,
+        m_flow_con=1,
+        n=1,
+        #T_eva_out=10 + 273.15 -5,
+        #T_con_out=273.15+40,
+        #Q_con=10000,  # W
     )
 
     #inputs.set(name="q4", value=0.3, description="Quality of refrigerant at exp_valve outlet")
