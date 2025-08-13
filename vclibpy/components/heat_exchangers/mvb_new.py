@@ -20,6 +20,9 @@ class BasicHX(HeatExchanger, abc.ABC):
                  two_phase_heat_transfer: TwoPhaseHeatTransfer = None,
                  n_elemente = 1,
                  fixed_pinch = None,
+                 d_hyd: float = 0.01, # Hydraulic diameter, used for pressure loss calculations
+                 d_outer: float = 0.012,
+                 use_pressure_loss: bool = False,# Flow area, used for pressure loss calculations
                  **kwargs):
         """
         Initializes BasicLMTD.
@@ -54,6 +57,56 @@ class BasicHX(HeatExchanger, abc.ABC):
         self.n_elemente = n_elemente
         self.fixed_pinch = fixed_pinch
 
+        self.d_hyd = d_hyd
+        self.d_outer = d_outer
+        self.use_pressure_loss = use_pressure_loss
+
+    def _calc_pressure_drop_segment(self, state_in, state_out, A_seg) -> float:
+        """
+        Calculate the pressure drop for a segment of the gas cooler, based on inlet and outlet state of segment and correlations of Blasius, which can be found
+        in the VDI-Wärmeatlas.
+        Args:
+            state_in:
+            state_out:
+            A_seg:
+
+        Returns:
+        dp: float
+        """
+
+        T_mean_seg = 0.5 * (state_in.T + state_out.T)
+        tra_prop_seg = self.calc_transport_properties_secondary_medium(T_mean_seg)
+        rho_seg = 0.5 * (state_in.d + state_out.d)
+        dyn_visc_seg = tra_prop_seg.dyn_vis
+        A_flow = np.pi / 4 * self.d_hyd**2
+        c = self.m_flow / (rho_seg * A_flow )
+        l_seg = A_seg / (np.pi * self.d_outer)
+
+        # First, we calculate the Reynolds number:
+        Re_seg = c * rho_seg * self.d_hyd / dyn_visc_seg
+
+        if Re_seg < 2300:
+            f = 64 / Re_seg
+        elif 3000 < Re_seg < 100000:
+            # Blasius Correlation
+            f = 0.3164 / (Re_seg ** 0.25)
+        elif 10^5 < Re_seg < 10**6:
+            # Hanakov Correlation
+            f = (1.8 * np.log(Re_seg) - 1.5) ** -2
+        elif Re_seg >= 10**6:
+            # Filonenko Correlation
+            f = (1.819 + np.log(Re_seg) - 1.64) ** -(1/2)
+        else:
+            print(f"Reynolds number {Re_seg} is not in the range of 2300 to 100000, no correlation available.")
+            dp_seg = 0.0
+            return dp_seg
+
+        dp_seg = f * l_seg / self.d_hyd * rho_seg * c**2 /2
+
+
+        return dp_seg
+
+
     def calc_alpha_two_phase(self, state_q0, state_q1, inputs: Inputs, fs_state: FlowsheetState) -> float:
         """
         Calculate the two-phase heat transfer coefficient.
@@ -77,6 +130,7 @@ class BasicHX(HeatExchanger, abc.ABC):
             state_inlet=self.state_inlet,
             state_outlet=self.state_outlet
         )
+
     def calc_alpha_liquid(self, transport_properties) -> float:
         """
         Calculate the liquid-phase heat transfer coefficient.
@@ -152,10 +206,11 @@ class BasicHX(HeatExchanger, abc.ABC):
         Qdot_element = Qdot / n_elements
         state_in_element = state_in
         T_sec_in_element = T_sec_out - dT_sec_element-273.15
+        dp_total = 0.0
         dT_mins = []
         A = 0
         for i in range(n_elements):
-            state_out_element = self.med_prop.calc_state("PH", state_in.p, state_in_element.h - dh_element)
+            state_out_element = self.med_prop.calc_state("PH", state_in_element.p, state_in_element.h - dh_element)
             T_ref_in_element = state_in_element.T-273.15
             T_ref_out_element = state_out_element.T-273.15
             dT_ref_element = abs(T_ref_in_element - T_ref_out_element)
@@ -172,10 +227,25 @@ class BasicHX(HeatExchanger, abc.ABC):
                 Q=Qdot_element,
                 T_prim_in=T_ref_in_element,
                 T_sec_in=T_sec_in_element)
-            A += min(W_sec, W_prim) * NTU / U
+            A_seg = min(W_sec, W_prim) * NTU / U
+            A += A_seg
+            dp_seg = 0.0
+            if not np.isinf(A):
+                if self.use_pressure_loss:
+                    dp_seg = self._calc_pressure_drop_segment(
+                        state_in=state_in_element,
+                        state_out=state_out_element,
+                        A_seg=A_seg
+                    )
+            dp_total += dp_seg
+            p_next = state_in_element.p - dp_seg
+            state_out_element = self.med_prop.calc_state("PH", p_next, state_out_element.h)
+
+            #else:
+                #pass
             state_in_element = state_out_element
             T_sec_in_element -= dT_sec_element
-        return A, np.min(dT_mins)
+        return A, np.min(dT_mins), dp_total
 
     def calc_NTU(
             self,
@@ -319,7 +389,7 @@ class MVB_Condenser(BasicHX, abc.ABC):
             fs_state.set(name="Con_U_lat", value=U)
             if self.model_approach.lower() == "ntu":
                 W_sec = Q_lat / dT_sec_lat
-                A_lat,_  = self.detailed_epsNTU(
+                A_lat,_,_  = self.detailed_epsNTU(
                     dh=state_q1.h - state_q0.h,
                     Qdot=Q_lat,
                     dT_sec=dT_sec_lat,
@@ -515,7 +585,7 @@ class MVB_Evaporator(BasicHX):
             fs_state.set(name="Eva_U_lat", value=U)
             if self.model_approach.lower() == "ntu":
                 W_sec = Q_lat / dT_sec_lat
-                A_lat,_  = self.detailed_epsNTU(
+                A_lat,_,_  = self.detailed_epsNTU(
                     dh=self.state_inlet.h - state_q1.h,
                     Qdot=Q_lat,
                     dT_sec=-dT_sec_lat,
@@ -541,7 +611,7 @@ class MVB_Evaporator(BasicHX):
             fs_state.set(name="Eva_U_gas", value=U)
             if self.model_approach.lower() == "ntu":
                 W_sec = Q_sh / dT_sec_sh
-                A_sh,_  = self.detailed_epsNTU(
+                A_sh,_,_  = self.detailed_epsNTU(
                     dh=state_q1.h - self.state_outlet.h,
                     Qdot=Q_sh,
                     dT_sec=-dT_sec_sh,
@@ -585,8 +655,7 @@ class MVB_Evaporator(BasicHX):
 
         return error, pinch
 
-
-class GasCooler(BasicHX):
+class GasCooler(BasicHX, abc.ABC):
 
     def calc(self, inputs: Inputs, fs_state: FlowsheetState) -> (float, float):
         dh_ref = self.state_inlet.h - self.state_outlet.h
@@ -604,7 +673,7 @@ class GasCooler(BasicHX):
         dT_sec = inputs.T_con_out - inputs.T_con_in
         W_sec = Q/dT_sec
 
-        A_calc, pinch = self.detailed_epsNTU(
+        A_calc, pinch, dp_total = self.detailed_epsNTU(
             dh=dh_ref,
             Qdot=Q,
             dT_sec=dT_sec,
@@ -615,6 +684,9 @@ class GasCooler(BasicHX):
             n_elements=self.n_elemente
         )
 
+        p_outlet = self.state_outlet.p - dp_total
+        self.state_outlet = self.med_prop.calc_state("PH", p_outlet, self.state_outlet.h)
+
         error = (self.A / A_calc - 1) * 100
 
         fs_state.set(name="Con_dh", value=-0.001 * (self.state_outlet.h - self.state_inlet.h), unit="kJ/kg",
@@ -622,7 +694,9 @@ class GasCooler(BasicHX):
         fs_state.set(name="Con_A", value=A_calc, unit="m2",
                      description="Area for heat exchange in condenser")
         fs_state.set(name="Con_Pinch", value=pinch, unit="K",
-                     description="minimal temperature difference in gas cooler")
+                     description="Minimal temperature difference in gas cooler")
+        fs_state.set(name="delta_p", value=dp_total / 10e5, unit="bar",
+                     description="Total pressure drop in gas cooler")
 
 
         return error, pinch
