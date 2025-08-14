@@ -240,7 +240,7 @@ class BasicHX(HeatExchanger, abc.ABC):
                     dp_total += dp_seg
                     p_next = state_in_element.p - dp_seg
                     if p_next < 7377300:
-                        break
+                        continue
                     state_out_element = self.med_prop.calc_state("PH", p_next, state_out_element.h)
 
 
