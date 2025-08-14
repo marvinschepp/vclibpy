@@ -6,3 +6,4 @@ from .mateu_royo2020 import MateuRoyo2020
 from .screw_bitzer import ScrewBitzer
 from .pierrecorrelation import PierreCorrelation
 from .GanesanEtAl import GanesanEtAl
+from .okasha_2018 import Okasha_CO2_Rec
