@@ -230,16 +230,19 @@ class BasicHX(HeatExchanger, abc.ABC):
             A_seg = min(W_sec, W_prim) * NTU / U
             A += A_seg
             dp_seg = 0.0
-            if not np.isinf(A):
+            if not np.isinf(abs(A)):
                 if self.use_pressure_loss:
                     dp_seg = self._calc_pressure_drop_segment(
                         state_in=state_in_element,
                         state_out=state_out_element,
                         A_seg=A_seg
                     )
-            dp_total += dp_seg
-            p_next = state_in_element.p - dp_seg
-            state_out_element = self.med_prop.calc_state("PH", p_next, state_out_element.h)
+                    dp_total += dp_seg
+                    p_next = state_in_element.p - dp_seg
+                    if p_next < 7377300:
+                        break
+                    state_out_element = self.med_prop.calc_state("PH", p_next, state_out_element.h)
+
 
             #else:
                 #pass
