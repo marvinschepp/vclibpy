@@ -1,4 +1,5 @@
 # # Example for a heat pump with a standard cycle
+from vclibpy.components.compressors import Okasha_CO2_Rec
 from vclibpy.datamodels import Inputs, FlowsheetState
 from vclibpy.flowsheets import BaseCycleTC, StandardCycleTC
 import numpy as np
@@ -70,13 +71,10 @@ def main():
     from vclibpy.components.expansion_valves import Bernoulli
     expansion_valve = Bernoulli(A=0.1)
 
-    from vclibpy.components.compressors import ConstantEffectivenessCompressor
-    compressor = ConstantEffectivenessCompressor(
+    from vclibpy.components.compressors import ConstantEffectivenessCompressor, Okasha_CO2_Rec
+    compressor = Okasha_CO2_Rec(
         N_max=100,
         V_h=8.27861415459033e-6,
-        eta_mech=1,
-        eta_isentropic=0.7,
-        lambda_h=0.9
     )
 
     # Now, we can plug everything into the flowsheet:
