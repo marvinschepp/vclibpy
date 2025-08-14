@@ -692,7 +692,7 @@ class BaseCycleTC(BaseCycle):
             T_eva_start = inputs.T_eva_in
         else:
             T_eva_start = inputs.T_eva_in - inputs.dT_eva_superheating
-        p_con_start = pc + 0.01 * 10**5
+        p_con_start = pc + 0.1 * 10**5
 
         n_min_tried = False
         n_min_try = False
