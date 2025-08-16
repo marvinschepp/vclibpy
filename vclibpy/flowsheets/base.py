@@ -36,6 +36,7 @@ class BaseCycle:
             condenser: HeatExchanger,
             T2_max = np.inf,
             T_con_out_max = np.inf,
+            q4_set = np.nan
     ):
         self.fluid: str = fluid
         self.evaporator = evaporator
@@ -46,6 +47,7 @@ class BaseCycle:
         self._p_max = None  # Is set by med-prop
         self.T2_max = T2_max
         self.T_con_out_max = T_con_out_max
+        self.q4_set = q4_set
 
     def __str__(self):
         return self.flowsheet_name
@@ -574,7 +576,7 @@ class BaseCycle:
         # Unpack state var:
         h_T = np.array([state.h for state in states]) / 1000
         T = [state.T - 273.15 for state in states]
-        p = np.array([state.p / 1e5 for state in states])
+        p = np.array([state.p for state in states])
         h_p = h_T
 
         fig, ax = plt.subplots(2, 1, sharex=True)
@@ -587,18 +589,17 @@ class BaseCycle:
         )
 
         ax[0].plot(h_T, T, color="r", marker="s")
-        ax[1].set_yscale('log')
         self._plot_secondary_heat_flow_rates(ax=ax[0], inputs=inputs)
-        ax[1].plot(h_p, p, marker="s", color="r")
+        ax[1].plot(h_p, np.log(p), marker="s", color="r")
         # Two phase limits
         ax[1].plot(
             self.med_prop.get_two_phase_limits("h") / 1000,
-            self.med_prop.get_two_phase_limits("p") / 1e5,
+            np.log(self.med_prop.get_two_phase_limits("p")),
             color="black"
         )
         plt.plot()
-        ax[1].set_ylabel("$log(p)$ in bar")
-        ax[1].set_ylim([np.min(p) * 0.9, np.max(p) * 1.1])
+        ax[1].set_ylabel("$log(p)$")
+        ax[1].set_ylim([np.min(np.log(p)) * 0.9, np.max(np.log(p)) * 1.1])
         ax[0].set_ylim([np.min(T) - 5, np.max(T) + 5])
         ax[1].set_xlim([np.min(h_T) * 0.9, np.max(h_T) * 1.1])
         ax[0].set_xlim([np.min(h_T) * 0.9, np.max(h_T) * 1.1])
@@ -692,7 +693,7 @@ class BaseCycleTC(BaseCycle):
             T_eva_start = inputs.T_eva_in
         else:
             T_eva_start = inputs.T_eva_in - inputs.dT_eva_superheating
-        p_con_start = pc + 0.1 * 10**5
+        p_con_start = pc + 0.01 * 10 ** 5
 
         n_min_tried = False
         n_min_try = False
@@ -716,128 +717,146 @@ class BaseCycleTC(BaseCycle):
             adjust_n = False
             temp_num_iteration = 0
 
-            #q4_next = 0.4
-            #q4_step = 0.05
-            #min_q4_step = 0.0001
-            #max_iter_q4 = 50
-            #iter_q4 = 0
+            if np.isnan(self.q4_set):
+                q4_next = 0.15
+            else:
+                q4_next = self.q4_set
 
-            #best_cop = 0.0
-            #best_q4 = q4_next
+            q4_step = 0.01
+            min_q4_step = 0.00001
+            max_iter_q4 = 500
+            iter_q4 = 0
 
-            #while iter_q4 < max_iter_q4 and abs(q4_step) > min_q4_step:
-            #iter_q4 += 1
-            inputs.q4 = 0.31468262816895
+            best_cop = 0.0
+            best_q4 = q4_next
+            found = False
+            adjust_q4 = False
+            while iter_q4 < max_iter_q4 and abs(q4_step) > min_q4_step:
+                iter_q4 += 1
+                inputs.set(name="q4",value=q4_next)
+                inputs.q4 = q4_next
 
-            p_con_next = p_con_start
-            step_p_con = 1 * (10 ** 5)
+                p_con_next = p_con_start
+                step_p_con = 1 * (10 ** 5)
 
-            '''if not 0.325 < q4_next < 0.6:
-                logger.warning(f"q4 exits reasonable area: {q4_next}. Exiting COP optimization")
-                break'''
+                #if not 0.325 < q4_next < 0.6:
+                    #logger.warning(f"q4 exits reasonable area: {q4_next}. Exiting COP optimization")
+                    #break
 
-
-            while True:
-                history_inputs = []
-                T_eva_next = T_eva_start
-                step_T_eva = 2
                 while True:
-                    num_iterations += 1
-                    temp_num_iteration += 1
+                    history_inputs = []
+                    T_eva_next = T_eva_start
+                    step_T_eva = 2
+                    if p_con_next > 200*(10**5):
+                        adjust_q4 = True
+                        break
+                    while True:
+                        num_iterations += 1
+                        temp_num_iteration += 1
 
-                    if inputs.fix_speed == float(True) and not n_min_try:
-                        if [n_next, p_con_next, T_eva_next] in history_inputs:
-                            return self.set_default_state(inputs, start_time, "LoopError")
-                        history_inputs.append([n_next, p_con_next, T_eva_next])
+                        if inputs.fix_speed == float(True) and not n_min_try:
+                            if [n_next, p_con_next, T_eva_next] in history_inputs:
+                                return self.set_default_state(inputs, start_time, "LoopError")
+                            history_inputs.append([n_next, p_con_next, T_eva_next])
 
-                    if (time.time() - start_time_warning) > 60000:
-                        logger.error("RunTimeWarning")
-                        start_time_warning = time.time()
+                        if (time.time() - start_time_warning) > 60000:
+                            logger.error("RunTimeWarning")
+                            start_time_warning = time.time()
 
-                    if time.time() - start_time > 90000:
-                        logger.error("RunTimeError")
-                        return self.set_default_state(inputs, start_time, "RunTimeError")
+                        if time.time() - start_time > 90000:
+                            logger.error("RunTimeError")
+                            return self.set_default_state(inputs, start_time, "RunTimeError")
 
-                    p_1 = self.med_prop.calc_state("TQ", T_eva_next, 0).p
-
-                    if p_1 < 0.01 * 10 ** 5:
-                        if inputs.fix_speed == float(True):
-                            adjust_n = True
+                        if T_eva_next < 273.15 - 30:
+                            adjust_q4 = True
                             break
+                        p_1 = self.med_prop.calc_state("TQ", T_eva_next, 0).p
 
-                        else:
-                            return self.set_fs_state_to_off(inputs, comment="Min Pressure reached",
+                        if p_1 < 0.01 * 10 ** 5:
+                            if inputs.fix_speed == float(True):
+                                adjust_n = True
+                                break
+
+                            else:
+                                return self.set_fs_state_to_off(inputs, comment="Min Pressure reached",
+                                                                start_time=start_time)
+
+                        try:
+                            valid = self.calc_states(p_1, p_con_next, inputs=inputs, fs_state=fs_state)
+                        except ValueError as err:
+                            logger.error("An error occurred while calculating states. "
+                                         "Can't guess next pressures, thus, exiting: %s", err)
+                            return self.set_default_state(inputs, start_time, "State Calculation Error")
+
+                        if valid is not None:
+                            p_con_next += 0.1 * (10 ** 5)
+                            continue
+
+                        try:
+                            error_eva, dT_min_eva = self.evaporator.calc(inputs=inputs, fs_state=fs_state)
+                        except:
+                            logger.error("An error occurred while calculating evaporator.")
+                            return self.set_default_state(inputs, start_time, "Evaporator Error")
+
+                        if dT_min_eva < 0:
+                            T_eva_next -= step_T_eva
+                            continue
+                        if abs(error_eva) < err_ntu:
+                            break
+                        if error_eva < 0:
+                            T_eva_next -= step_T_eva
+                            continue
+                        if error_eva > 0:
+                            if dT_min_eva < 0.1 * min_iteration_step:
+                                break
+                            T_eva_next += step_T_eva
+                            step_T_eva /= 10
+                            if step_T_eva < min_iteration_step:
+                                break
+                            T_eva_next -= step_T_eva
+                            T_eva_next = min(T_eva_next, T_eva_start)
+                            continue
+                    if adjust_q4: break
+
+                    if inputs.fix_speed == float(True) and adjust_n:
+                        if n_min_try:
+                            return self.set_fs_state_to_off(inputs, comment="Min Compressor Speed reached",
                                                             start_time=start_time)
-
+                        break
                     try:
-                        valid = self.calc_states(p_1, p_con_next, inputs=inputs, fs_state=fs_state)
-                    except ValueError as err:
-                        logger.error("An error occurred while calculating states. "
-                                     "Can't guess next pressures, thus, exiting: %s", err)
-                        return self.set_default_state(inputs, start_time, "State Calculation Error")
+                        error_con, dT_min_con = self.condenser.calc(inputs=inputs, fs_state=fs_state)
 
-                    if valid is not None:
-                        p_con_next += 0.1*(10**5)
-                        continue
-
-                    try:
-                        error_eva, dT_min_eva = self.evaporator.calc(inputs=inputs, fs_state=fs_state)
                     except:
-                        logger.error("An error occurred while calculating evaporator.")
-                        return self.set_default_state(inputs, start_time, "Evaporator Error")
+                        logger.error(f"An error occurred while calculating condenser.")
+                        return self.set_default_state(inputs, start_time, "Condenser Error")
 
-                    if dT_min_eva < 0:
-                        T_eva_next -= step_T_eva
+                    if dT_min_con < 0:
+                        p_con_next += step_p_con
                         continue
-                    if abs(error_eva) < err_ntu:
+                    if abs(error_con) < err_ntu:
                         break
-                    if error_eva < 0:
-                        T_eva_next -= step_T_eva
+                    if error_con < 0:
+                        p_con_next += step_p_con
                         continue
-                    if error_eva > 0:
-                        if dT_min_eva < 0.1 * min_iteration_step:
+                    if error_con > 0:
+                        if dT_min_con < 0.1 * min_iteration_step:
                             break
-                        T_eva_next += step_T_eva
-                        step_T_eva /= 10
-                        if step_T_eva < min_iteration_step:
+                        p_con_next -= step_p_con
+                        step_p_con /= 10
+                        p_con_next += step_p_con
+                        p_con_next = max(p_con_next, p_con_start)
+                        if p_con_next < min_iteration_step:
                             break
-                        T_eva_next -= step_T_eva
-                        T_eva_next = min(T_eva_next, T_eva_start)
                         continue
-
-                if inputs.fix_speed == float(True) and adjust_n:
-                    if n_min_try:
-                        return self.set_fs_state_to_off(inputs, comment="Min Compressor Speed reached",
-                                                        start_time=start_time)
+                if not np.isnan(self.q4_set) or found:
                     break
-                try:
-                    error_con, dT_min_con = self.condenser.calc(inputs=inputs, fs_state=fs_state)
-
-                except:
-                    logger.error(f"An error occurred while calculating condenser.")
-                    return self.set_default_state(inputs, start_time, "Condenser Error")
-
-                if dT_min_con < 0:
-                    p_con_next += step_p_con
-                    continue
-                if abs(error_con) < err_ntu:
-                    break
-                if error_con < 0:
-                    p_con_next += step_p_con
-                    continue
-                if error_con > 0:
-                    if dT_min_con < 0.1 * min_iteration_step:
-                        break
-                    p_con_next -= step_p_con
-                    step_p_con /= 10
-                    p_con_next += step_p_con
-                    p_con_next = max(p_con_next, p_con_start)
-                    if p_con_next < min_iteration_step:
-                        break
+                if adjust_q4:
+                    q4_next += q4_step
+                    adjust_q4 = False
+                    print("ADJUST q4")
                     continue
 
-
-                '''current_cop = self.condenser.calc_Q_flow() / self.calc_electrical_power(fs_state=fs_state, inputs=inputs)
+                current_cop = self.condenser.calc_Q_flow() / self.calc_electrical_power(fs_state=fs_state, inputs=inputs)
 
                 if current_cop > best_cop:
                     best_cop = current_cop
@@ -846,9 +865,12 @@ class BaseCycleTC(BaseCycle):
                     q4_next = best_q4 + q4_step
 
                 else:
+                    found = True
+                    q4_next = best_q4
+                    continue
                     q4_step *= -1
-                    q4_step /= 2
-                    q4_next = best_q4 + q4_step'''
+                    q4_step /= 10
+                    q4_next = best_q4 + q4_step
 
             if inputs.fix_speed == float(False):
                 break
@@ -880,7 +902,6 @@ class BaseCycleTC(BaseCycle):
                         )
                         return self.set_fs_state_to_off(inputs, comment="Min Compressor Speed reached",
                                                         start_time=start_time)
-
 
             if not n_min_tried:
                 n_next = 0.2
