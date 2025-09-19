@@ -6,6 +6,7 @@ import time
 from copy import deepcopy
 from abc import abstractmethod
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from vclibpy import media, Inputs
 from vclibpy.datamodels import FlowsheetState
@@ -337,7 +338,7 @@ class BaseCycle:
                      description="Evaporator inlet temperature secondary")
         fs_state.set(name="SEC_T_eva_out", value=inputs.T_eva_out - 273.15,
                      description="Evaporator outlet temperature secondary")
-        fs_state.set(name="SEC_dT_eva", value=inputs.T_eva_out - inputs.T_eva_out,
+        fs_state.set(name="SEC_dT_eva", value=inputs.T_eva_in - inputs.T_eva_out,
                      description="Evaporator temperature difference secondary")
         fs_state.set(name="SEC_m_flow_eva", value=self.evaporator.m_flow_secondary,
                      description="Evaporator mass flow secondary")
@@ -672,6 +673,8 @@ class BaseCycleTC(BaseCycle):
 
     def calc_steady_state(self, inputs: Inputs, fluid: str = None, **kwargs):
 
+        q4_cop_res = {"q4": [], "COP":[]}
+
         start_time_warning = time.time()
         start_time = time.time()
 
@@ -703,7 +706,8 @@ class BaseCycleTC(BaseCycle):
         if inputs.fix_speed == float(True):
             n_input = deepcopy(inputs.n)
             n_next = inputs.n
-            n_max = 100 * n_input / inputs.n_rel
+            #n_max = 100 * n_input / inputs.n_rel
+            n_max = inputs.n_rel
 
         while True:
             if inputs.fix_speed == float(True):
@@ -719,17 +723,19 @@ class BaseCycleTC(BaseCycle):
             temp_num_iteration = 0
 
             if np.isnan(self.q4_set):
-                q4_next = 0.15
+                q4_next = 0.1
             else:
                 q4_next = self.q4_set
 
             q4_step = 0.01
+            q4_max = 0.5
             min_q4_step = 0.00001
             max_iter_q4 = 500
             iter_q4 = 0
 
             best_cop = 0.0
             best_q4 = q4_next
+            best_fs_state = None
             found = False
             adjust_q4 = False
             while iter_q4 < max_iter_q4 and abs(q4_step) > min_q4_step:
@@ -760,11 +766,11 @@ class BaseCycleTC(BaseCycle):
                                 return self.set_default_state(inputs, start_time, "LoopError")
                             history_inputs.append([n_next, p_con_next, T_eva_next])
 
-                        if (time.time() - start_time_warning) > 60000:
+                        if (time.time() - start_time_warning) > 6000:
                             logger.error("RunTimeWarning")
                             start_time_warning = time.time()
 
-                        if time.time() - start_time > 90000:
+                        if time.time() - start_time > 9000:
                             logger.error("RunTimeError")
                             return self.set_default_state(inputs, start_time, "RunTimeError")
 
@@ -772,6 +778,10 @@ class BaseCycleTC(BaseCycle):
                             adjust_q4 = True
                             break
                         p_1 = self.med_prop.calc_state("TQ", T_eva_next, 0).p
+
+                        if p_con_next < pc:
+                            print(f"Gas cooler pressure below critical pressure for q4={q4_next}")
+                            break
 
                         if p_1 < 0.01 * 10 ** 5:
                             if inputs.fix_speed == float(True):
@@ -824,6 +834,9 @@ class BaseCycleTC(BaseCycle):
                             return self.set_fs_state_to_off(inputs, comment="Min Compressor Speed reached",
                                                             start_time=start_time)
                         break
+                    if p_con_next < pc:
+                        print(f"Gas cooler pressure below critical pressure for q4={q4_next}")
+                        break
                     try:
                         error_con, dT_min_con = self.condenser.calc(inputs=inputs, fs_state=fs_state)
 
@@ -842,11 +855,13 @@ class BaseCycleTC(BaseCycle):
                     if error_con > 0:
                         if dT_min_con < 0.1 * min_iteration_step:
                             break
+                        #if step_p_con < 10:
+                        #    break
                         p_con_next -= step_p_con
-                        step_p_con /= 10
+                        step_p_con /= 5
                         p_con_next += step_p_con
-                        p_con_next = max(p_con_next, p_con_start)
-                        if p_con_next < min_iteration_step:
+                        #p_con_next = max(p_con_next, p_con_start)
+                        if step_p_con < min_iteration_step*100:
                             break
                         continue
                 if not np.isnan(self.q4_set) or found:
@@ -858,20 +873,30 @@ class BaseCycleTC(BaseCycle):
                     continue
 
                 current_cop = self.condenser.calc_Q_flow() / self.calc_electrical_power(fs_state=fs_state, inputs=inputs)
-
+                '''q4_cop_res["q4"].append(q4_next)
+                q4_cop_res["COP"].append(current_cop)
+                if q4_next < 0.5:
+                    q4_next += q4_step
+                    continue
+                else:
+                    break'''
                 if current_cop > best_cop:
                     best_cop = current_cop
                     best_q4 = q4_next
+                    #best_fs_state = deepcopy(fs_state)
 
                     q4_next = best_q4 + q4_step
 
                 else:
                     found = True
                     q4_next = best_q4
+                    #q4_next += q4_step
                     continue
-                    q4_step *= -1
-                    q4_step /= 10
-                    q4_next = best_q4 + q4_step
+                    #q4_step *= -1
+                    #q4_step /= 10
+                    #q4_next = best_q4 + q4_step
+
+            #fs_state = best_fs_state
 
             if inputs.fix_speed == float(False):
                 break
@@ -927,6 +952,9 @@ class BaseCycleTC(BaseCycle):
             )
             fs_state.set(name="relative_compressor_speed", value=n_input)
 
+        #df = pd.DataFrame(q4_cop_res)
+        #df.to_csv(os.path.join(r"D:\11_Auslegung_CO2\TP_2", "q4_cop_res.csv"), index=False, sep=";", decimal=",")
+
         if self.flowsheet_name == "IHX":
             self.calc_missing_IHX_states(inputs, fs_state, **kwargs)
 
@@ -945,7 +973,7 @@ class BaseCycleTC(BaseCycle):
         fs_state.set("ErrorCon", value=error_con)
         fs_state.set("ErrorEva", value=error_eva)
         fs_state.set(
-            name="P_el", value=P_el / 1000, unit="W",
+            name="P_el", value=P_el, unit="W",
             description="Power consumption"
         )
         fs_state.set(
@@ -959,11 +987,11 @@ class BaseCycleTC(BaseCycle):
         fs_state.set(name="COP_Carnot", value=COP_carnot,
                      unit="-", description="maximal Coefficient of performance")
         fs_state.set(
-            name="Q_con", value=Q_con / 1000, unit="W",
+            name="Q_con", value=Q_con, unit="W",
             description="Condenser refrigerant heat flow rate"
         )
         fs_state.set(
-            name="Q_eva", value=Q_eva / 1000, unit="W",
+            name="Q_eva", value=Q_eva, unit="W",
             description="Evaporator refrigerant heat flow rate"
         )
 
