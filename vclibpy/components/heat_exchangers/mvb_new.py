@@ -637,6 +637,8 @@ class MVB_Evaporator(BasicHX, abc.ABC):
                      description="Area for superheat heat exchange in evaporator")
         fs_state.set(name="Eva_A_lat", value=A_lat, unit="m2",
                      description="Area for latent heat exchange in evaporator")
+        fs_state.set(name="Eva_A", value=A_calc, unit="m2",
+                     description="Area for total heat exchange in evaporator")
         fs_state.set(name="Eva_A_sh_rel", value=A_sh / self.A, unit="",
                      description="relative Area for superheat heat exchange in evaporator")
         fs_state.set(name="Eva_A_lat_rel", value=A_lat / self.A, unit="",
@@ -690,6 +692,8 @@ class GasCooler(BasicHX, abc.ABC):
 
         fs_state.set(name="Con_dh", value=-0.001 * (self.state_outlet.h - self.state_inlet.h), unit="kJ/kg",
                      description="Enthalpy difference Condenser")
+        fs_state.set(name="Con_A", value=A_calc, unit="m2",
+                     description="Area for total heat exchange in evaporator")
         fs_state.set(name="Con_Pinch", value=pinch, unit="K",
                      description="Minimal temperature difference in gas cooler")
         fs_state.set(name="delta_p", value=dp_total / 10e5, unit="bar",
