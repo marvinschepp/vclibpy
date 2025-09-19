@@ -41,7 +41,7 @@ def main():
     from vclibpy.components.heat_exchangers import mvb_new
     from vclibpy.components.heat_exchangers import heat_transfer
     condenser = mvb_new.GasCooler(
-        A=1.92016779139578,#0.986125012,
+        A=9.68283841767566,#0.986125012,
         secondary_medium="air",
         flow_type="counter",
         ratio_outer_to_inner_area=1,
@@ -50,13 +50,13 @@ def main():
         gas_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=1200),
         wall_heat_transfer=heat_transfer.wall.WallTransfer(lambda_=np.inf, thickness=1),
         liquid_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=1500),
-        secondary_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=np.inf),
+        secondary_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=50),
         n_elemente=50,
-        use_pressure_loss=True
+        use_pressure_loss=False
     )
 
     evaporator = mvb_new.MVB_Evaporator(
-        A=0.634696328041979,
+        A=5.29090398681032,
         secondary_medium="air",
         flow_type="counter",
         ratio_outer_to_inner_area=1,
@@ -65,16 +65,26 @@ def main():
         gas_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=1200),
         wall_heat_transfer=heat_transfer.wall.WallTransfer(lambda_=np.inf, thickness=1),
         liquid_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=1500),
-        secondary_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=np.inf),
+        secondary_heat_transfer=heat_transfer.constant.ConstantHeatTransfer(alpha=50),
         use_pressure_loss=False,
     )
     from vclibpy.components.expansion_valves import Bernoulli
     expansion_valve = Bernoulli(A=0.1)
 
-    from vclibpy.components.compressors import ConstantEffectivenessCompressor, Okasha_CO2_Rec
+    '''from vclibpy.components.compressors import ConstantEffectivenessCompressor, Okasha_CO2_Rec
     compressor = Okasha_CO2_Rec(
-        N_max=100,
-        V_h=8.27861415459033e-6,
+        N_max=50,
+        V_h=3.17817237483716E-06,
+        eta_mech=1.0,
+    )'''
+
+    from vclibpy.components.compressors import ConstantEffectivenessCompressor
+    compressor = ConstantEffectivenessCompressor(
+        N_max=50,
+        V_h=4.56068262240451E-06,
+        eta_isentropic=0.7,
+        lambda_h=0.9,
+        eta_mech=1.0,
     )
 
     # Now, we can plug everything into the flowsheet:
@@ -89,12 +99,12 @@ def main():
         #fix_speed=False,
         #fix_m_flow_con=False,
         #fix_m_flow_eva=False,
-        T_eva_in=25.8006104 + 273.15,#10 + 273.15,
-        T_con_in=26.9513359 + 273.15,#25 + 273.15,
+        T_eva_in=19.4170742 + 273.15,#10 + 273.15,
+        T_con_in=24.5564436 + 273.15,#25 + 273.15,
         dT_eva_superheating=10,
         dT_con_subcooling=0,
-        m_flow_eva=1,
-        m_flow_con=1,
+        m_flow_eva=0.93344081292099,
+        m_flow_con=1.01893840012639,
         n=1,
         #T_eva_out=10 + 273.15 -5,
         #T_con_out=273.15+40,
@@ -103,7 +113,7 @@ def main():
 
     #inputs.set(name="q4", value=0.3, description="Quality of refrigerant at exp_valve outlet")
 
-    results_path = Path("results")
+    results_path = Path(r"D:\11_Auslegung_CO2\TP_1")
     results_path.mkdir(parents=True, exist_ok=True)
     print(f"Saving results in '{results_path.absolute()}'.")
 
