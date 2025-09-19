@@ -7,3 +7,4 @@ from .screw_bitzer import ScrewBitzer
 from .pierrecorrelation import PierreCorrelation
 from .GanesanEtAl import GanesanEtAl
 from .okasha_2018 import Okasha_CO2_Rec
+from .guth_2022 import Guth_R290_Scroll
