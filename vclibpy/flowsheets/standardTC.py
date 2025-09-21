@@ -48,7 +48,7 @@ class StandardCycleTC(BaseCycleTC):
             self.expansion_valve
         ]
 
-    def get_states_in_order_for_plotting(self, h_steps=20):
+    def get_states_in_order_for_plotting(self, h_steps=50):
         p_eva = self.evaporator.state_inlet.p
         p_con = self.condenser.state_inlet.p
         state_1 = self.evaporator.state_outlet
