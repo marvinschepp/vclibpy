@@ -142,11 +142,11 @@ class BaseCycle:
                             return self.set_default_state(inputs, start_time, "LoopError")
                         history_inputs.append([n_next, T_con_next, T_eva_next])
 
-                    if (time.time() - start_time_warning) > 60:
+                    if (time.time() - start_time_warning) > 600:
                         logger.error("RunTimeWarning")
                         start_time_warning = time.time()
 
-                    if time.time() - start_time > 90:
+                    if time.time() - start_time > 900:
                         logger.error("RunTimeError")
                         return self.set_default_state(inputs, start_time, "RunTimeError")
 
@@ -347,7 +347,7 @@ class BaseCycle:
         fs_state.set(name="REF_p_con", value=self.condenser.state_inlet.p / 100000)
         fs_state.set(name="REF_p_eva", value=self.evaporator.state_inlet.p / 100000)
         if save_path_plots is not None:
-            self.plot_cycle(save_path=save_path_plots.joinpath(f"{COP_inner}_final_result.svg"), inputs=inputs)
+            self.plot_cycle(save_path=save_path_plots.joinpath(f"{COP_inner}_final_result.png"), inputs=inputs)
         all_states = self.get_states()
         for _state in all_states:
             fs_state.set(name="REF_T_" + _state, value=all_states[_state].T - 273.15)
@@ -673,7 +673,7 @@ class BaseCycleTC(BaseCycle):
 
     def calc_steady_state(self, inputs: Inputs, fluid: str = None, **kwargs):
 
-        #q4_cop_res = {"q4": [], "COP":[]}
+        q4_cop_res = {"q4": [], "COP":[]}
 
         start_time_warning = time.time()
         start_time = time.time()
@@ -723,7 +723,7 @@ class BaseCycleTC(BaseCycle):
             temp_num_iteration = 0
 
             if np.isnan(self.q4_set):
-                q4_next = 0.2
+                q4_next = 0.1
             else:
                 q4_next = self.q4_set
 
@@ -735,7 +735,7 @@ class BaseCycleTC(BaseCycle):
 
             best_cop = 0.0
             best_q4 = q4_next
-            #best_fs_state = None
+            best_fs_state = None
             found = False
             adjust_q4 = False
             while iter_q4 < max_iter_q4 and abs(q4_step) > min_q4_step:
@@ -855,6 +855,8 @@ class BaseCycleTC(BaseCycle):
                     if error_con > 0:
                         if dT_min_con < 0.1 * min_iteration_step:
                             break
+                        #if step_p_con < 10:
+                        #    break
                         p_con_next -= step_p_con
                         step_p_con /= 5
                         p_con_next += step_p_con
@@ -863,7 +865,7 @@ class BaseCycleTC(BaseCycle):
                             break
                         continue
                 if not np.isnan(self.q4_set) or found:
-                     break
+                    break
                 if adjust_q4:
                     q4_next += q4_step
                     adjust_q4 = False
