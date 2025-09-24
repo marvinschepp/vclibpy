@@ -126,29 +126,26 @@ def main():
     A_con_guth_4 = 21.4557008017595
     A_eva_guth_4 = 30.8441537395443
     V_h_guth_4 = 8.36749404620234E-05
-    m_con_guth_4 = 1.02053098456463
-    m_eva_guth_4 = 1.37983559474468
 
     A_con_guth_6 = 9.60930088723759
     A_eva_guth_6 = 8.65606578883451
     V_h_guth_6 = 4.81262724410587E-05
-    m_con_guth_6 = 0.979649619817592
-    m_eva_guth_6 = 0.962817947679606
 
     A_con_const_4 = 21.4453959368194
     A_eva_const_4 = 30.7594834463745
     V_h_const_4 = 8.06513143111695E-05
-    m_con_const_4 = 1.02053103825988
-    m_eva_const_4 = 1.37606464815952
 
     A_con_const_6 = 9.47811695569704
     A_eva_const_6 = 8.37676430378974
     V_h_const_6 = 4.46949745474772E-05
-    m_con_const_6 = 0.979649724363998
-    m_eva_const_6 = 0.931792978990447
+
+    m_con_guth = 1.01559372038895
+    m_eva_guth = 0.959477939106933
+    m_con_const = 1.01559377092849
+    m_eva_const = 0.947929694328672
 
     condenser = mvb_new.MVB_Condenser(
-        A=A_con_guth_4,
+        A=A_con_const_4,
         secondary_medium="air",
         flow_type="counter",
         ratio_outer_to_inner_area=1,
@@ -161,7 +158,7 @@ def main():
     )
 
     evaporator = mvb_new.MVB_Evaporator(
-        A=A_eva_guth_4,
+        A=A_eva_const_4,
         secondary_medium="air",
         flow_type="counter",
         ratio_outer_to_inner_area=1,
@@ -176,21 +173,21 @@ def main():
     from vclibpy.components.expansion_valves import Bernoulli
     expansion_valve = Bernoulli(A=0.1)
 
-    from vclibpy.components.compressors import Guth_R290_Scroll
+    '''from vclibpy.components.compressors import Guth_R290_Scroll
     compressor = Guth_R290_Scroll(
         N_max=50,
-        V_h=V_h_guth_4,
+        V_h=V_h_guth_6,
         eta_mech=1.0,
-    )
+    )'''
 
-    '''from vclibpy.components.compressors import ConstantEffectivenessCompressor
+    from vclibpy.components.compressors import ConstantEffectivenessCompressor
     compressor = ConstantEffectivenessCompressor(
         N_max=50,
-        V_h=4.56068262240451E-06,
+        V_h=V_h_const_4,
         eta_isentropic=0.7,
         lambda_h=0.9,
         eta_mech=1.0,
-    )'''
+    )
 
     # Now, we can plug everything into the flowsheet:
     flowsheet = StandardCycle(
@@ -207,9 +204,9 @@ def main():
         T_eva_in=21.8585141 + 273.15,#10 + 273.15,
         T_con_in=18.3384336 + 273.15,#25 + 273.15,
         dT_eva_superheating=10,
-        dT_con_subcooling=0,
-        m_flow_eva=0.922185499295078,
-        m_flow_con=1.01559762045718,
+        dT_con_subcooling=5,
+        m_flow_eva=m_eva_const,
+        m_flow_con=m_con_const,
         n=1,
         #T_eva_out=10 + 273.15 -5,
         #T_con_out=273.15+40,
@@ -218,7 +215,7 @@ def main():
 
     #inputs.set(name="q4", value=0.3, description="Quality of refrigerant at exp_valve outlet")
 
-    results_path = Path(r"D:\12_Auslegung_R290\TP_5")
+    results_path = Path(r"D:\12_Auslegung_R290\TP_5\AP4\Const")
     results_path.mkdir(parents=True, exist_ok=True)
     print(f"Saving results in '{results_path.absolute()}'.")
 

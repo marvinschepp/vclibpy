@@ -126,26 +126,23 @@ def main():
     A_con_guth_4 = 21.4557008017595
     A_eva_guth_4 = 30.8441537395443
     V_h_guth_4 = 8.36749404620234E-05
-    m_con_guth_4 = 1.02053098456463
-    m_eva_guth_4 = 1.37983559474468
 
     A_con_guth_6 = 9.60930088723759
     A_eva_guth_6 = 8.65606578883451
     V_h_guth_6 = 4.81262724410587E-05
-    m_con_guth_6 = 0.979649619817592
-    m_eva_guth_6 = 0.962817947679606
 
     A_con_const_4 = 21.4453959368194
     A_eva_const_4 = 30.7594834463745
     V_h_const_4 = 8.06513143111695E-05
-    m_con_const_4 = 1.02053103825988
-    m_eva_const_4 = 1.37606464815952
 
     A_con_const_6 = 9.47811695569704
     A_eva_const_6 = 8.37676430378974
     V_h_const_6 = 4.46949745474772E-05
-    m_con_const_6 = 0.979649724363998
-    m_eva_const_6 = 0.931792978990447
+
+    m_con_guth = 1.01893561011788
+    m_eva_guth = 0.979187235912339
+    m_con_const = 1.01893565859185
+    m_eva_const = 0.962189003673557
 
     condenser = mvb_new.MVB_Condenser(
         A=A_con_guth_6,
@@ -186,7 +183,7 @@ def main():
     '''from vclibpy.components.compressors import ConstantEffectivenessCompressor
     compressor = ConstantEffectivenessCompressor(
         N_max=50,
-        V_h=V_h_guth_4,
+        V_h=V_h_const_4,
         eta_isentropic=0.7,
         lambda_h=0.9,
         eta_mech=1.0,
@@ -208,8 +205,8 @@ def main():
         T_con_in=24.5564436 + 273.15,#25 + 273.15,
         dT_eva_superheating=10,
         dT_con_subcooling=5,
-        m_flow_eva=m_eva_guth_6,
-        m_flow_con=m_con_guth_6,
+        m_flow_eva=m_eva_guth,
+        m_flow_con=m_con_guth,
         n=1,
         #T_eva_out=10 + 273.15 -5,
         #T_con_out=273.15+40,
