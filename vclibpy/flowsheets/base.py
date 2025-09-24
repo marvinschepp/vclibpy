@@ -347,7 +347,7 @@ class BaseCycle:
         fs_state.set(name="REF_p_con", value=self.condenser.state_inlet.p / 100000)
         fs_state.set(name="REF_p_eva", value=self.evaporator.state_inlet.p / 100000)
         if save_path_plots is not None:
-            self.plot_cycle(save_path=save_path_plots.joinpath(f"{COP_inner}_final_result.png"), inputs=inputs)
+            self.plot_cycle(save_path=save_path_plots.joinpath(f"{COP_inner:.2f}_final_result.svg"), inputs=inputs)
         all_states = self.get_states()
         for _state in all_states:
             fs_state.set(name="REF_T_" + _state, value=all_states[_state].T - 273.15)

@@ -148,7 +148,7 @@ def main():
     m_eva_const_6 = 0.931792978990447
 
     condenser = mvb_new.MVB_Condenser(
-        A=A_con_guth_4,
+        A=A_con_guth_6,
         secondary_medium="air",
         flow_type="counter",
         ratio_outer_to_inner_area=1,
@@ -161,7 +161,7 @@ def main():
     )
 
     evaporator = mvb_new.MVB_Evaporator(
-        A=A_eva_guth_4,
+        A=A_eva_guth_6,
         secondary_medium="air",
         flow_type="counter",
         ratio_outer_to_inner_area=1,
@@ -176,21 +176,21 @@ def main():
     from vclibpy.components.expansion_valves import Bernoulli
     expansion_valve = Bernoulli(A=0.1)
 
-    '''from vclibpy.components.compressors import Guth_R290_Scroll
+    from vclibpy.components.compressors import Guth_R290_Scroll
     compressor = Guth_R290_Scroll(
         N_max=50,
-        V_h=V_h_guth_4,
+        V_h=V_h_guth_6,
         eta_mech=1.0,
-    )'''
+    )
 
-    from vclibpy.components.compressors import ConstantEffectivenessCompressor
+    '''from vclibpy.components.compressors import ConstantEffectivenessCompressor
     compressor = ConstantEffectivenessCompressor(
         N_max=50,
         V_h=V_h_guth_4,
         eta_isentropic=0.7,
         lambda_h=0.9,
         eta_mech=1.0,
-    )
+    )'''
 
     # Now, we can plug everything into the flowsheet:
     flowsheet = StandardCycle(
@@ -207,9 +207,9 @@ def main():
         T_eva_in=19.4170742 + 273.15,#10 + 273.15,
         T_con_in=24.5564436 + 273.15,#25 + 273.15,
         dT_eva_superheating=10,
-        dT_con_subcooling=0,
-        m_flow_eva=m_eva_guth_4,
-        m_flow_con=m_con_guth_4,
+        dT_con_subcooling=5,
+        m_flow_eva=m_eva_guth_6,
+        m_flow_con=m_con_guth_6,
         n=1,
         #T_eva_out=10 + 273.15 -5,
         #T_con_out=273.15+40,
@@ -218,7 +218,7 @@ def main():
 
     #inputs.set(name="q4", value=0.3, description="Quality of refrigerant at exp_valve outlet")
 
-    results_path = Path(r"D:\12_Auslegung_R290\TP_1\AP4\Constant")
+    results_path = Path(r"D:\12_Auslegung_R290\TP_1\AP6\Guth")
     results_path.mkdir(parents=True, exist_ok=True)
     print(f"Saving results in '{results_path.absolute()}'.")
 

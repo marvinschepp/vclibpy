@@ -6,18 +6,18 @@
 def main():
     # First, let's import the important classes from vclibpy's
     # `media` module:
-    from vclibpy.media import CoolProp, ThermodynamicState, TransportProperties
+    from vclibpy.media import RefProp, ThermodynamicState, TransportProperties
     # We have two media property classes, `CoolProp` and `RefProp`.
     # The latter requires a dll, which you have to purchase together with RefProp.
     # Thus, in this example, we will use `CoolProp`. Pass the `fluid_name` to
     # select the fluid you are going to use.
-    cool_prop = CoolProp(fluid_name="Propane")
+    cool_prop = RefProp(fluid_name="CO2")
     # ## ThermodynamicState calculation
     # Let's start and show how the media property classes work. You always
     # call `calc_state()`. The documentation explains how to use it:
-    help(cool_prop.calc_state)
+    #help(cool_prop.calc_state)
     # Let's try and start with pressure of 2 bar (2e5 Pa) and 100 kJ/kg enthalpy:
-    state = cool_prop.calc_state("PH", 2e5, 100e3)
+    state = cool_prop.calc_state("PT", 7377300, 304.1282)
     # The state is an instance of `ThermodynamicState`:
     print(type(state))
     # The state contains all important specific values:
@@ -28,9 +28,9 @@ def main():
     # With a given state, we can calculate the transport properties. Those include
     # relevant information for component models, e.g. heat conductivity.
     # For information on all properties, look at the documentation:
-    help(cool_prop.calc_transport_properties)
+    #help(cool_prop.calc_transport_properties)
     # You just have to pass a valid state:
-    transport_properties = cool_prop.calc_transport_properties(state=state)
+    '''transport_properties = cool_prop.calc_transport_properties(state=state)
     print(transport_properties.get_pretty_print())
 
     # ## Plotting
@@ -84,7 +84,7 @@ def main():
 
     # After getting familiar with calling the refrigerant data module `media`, you will
     # learn how to use the `Compressor` classes in the next example.
-
+'''
 
 if __name__ == '__main__':
     main()

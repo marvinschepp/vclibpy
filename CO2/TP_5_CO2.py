@@ -96,7 +96,7 @@ def main():
         expansion_valve=expansion_valve,
     )
     inputs = Inputs(
-        #fix_speed=False,
+        fix_speed=False,
         #fix_m_flow_con=False,
         #fix_m_flow_eva=False,
         T_eva_in=21.8585141 + 273.15,#10 + 273.15,
@@ -108,7 +108,7 @@ def main():
         n=1,
         #T_eva_out=10 + 273.15 -5,
         #T_con_out=273.15+40,
-        #Q_con=10000,  # W
+        Q_con=6557.332,  # W
     )
 
     #inputs.set(name="q4", value=0.3, description="Quality of refrigerant at exp_valve outlet")

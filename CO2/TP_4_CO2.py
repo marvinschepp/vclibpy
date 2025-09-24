@@ -1,5 +1,5 @@
 # # Example for a heat pump with a standard cycle
-from vclibpy.components.compressors import Okasha_CO2_Rec
+#from vclibpy.components.compressors import Okasha_CO2_Rec
 from vclibpy.datamodels import Inputs, FlowsheetState
 from vclibpy.flowsheets import BaseCycleTC, StandardCycleTC
 import numpy as np
@@ -74,7 +74,7 @@ def main():
     '''from vclibpy.components.compressors import ConstantEffectivenessCompressor, Okasha_CO2_Rec
     compressor = Okasha_CO2_Rec(
         N_max=50,
-        V_h=3.17817237483716E-06,
+        V_h=1.91565645203768E-05,
         eta_mech=1.0,
     )'''
 
@@ -96,19 +96,19 @@ def main():
         expansion_valve=expansion_valve,
     )
     inputs = Inputs(
-        #fix_speed=False,
+        fix_speed=False,
         #fix_m_flow_con=False,
         #fix_m_flow_eva=False,
-        T_eva_in=25.8006104 + 273.15,#10 + 273.15,
-        T_con_in=26.9513359 + 273.15,#25 + 273.15,
+        T_eva_in=6.49503267 + 273.15,#10 + 273.15,
+        T_con_in=13.9522346 + 273.15,#25 + 273.15,
         dT_eva_superheating=10,
         dT_con_subcooling=0,
-        m_flow_eva=1.39257953881901,
-        m_flow_con=1.02054670459611,
+        m_flow_eva=0.875498706834341,
+        m_flow_con=0.979652652734695,
         n=1,
         #T_eva_out=10 + 273.15 -5,
         #T_con_out=273.15+40,
-        #Q_con=10000,  # W
+        Q_con=6039.292,  # W
     )
 
     #inputs.set(name="q4", value=0.3, description="Quality of refrigerant at exp_valve outlet")
