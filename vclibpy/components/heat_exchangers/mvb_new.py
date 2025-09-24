@@ -417,7 +417,7 @@ class MVB_Condenser(BasicHX, abc.ABC):
 
                 W_sec = Q_sc / dT_sec_sc
 
-                A_sc,_ = self.detailed_epsNTU(
+                A_sc,_,_ = self.detailed_epsNTU(
                     dh= state_q0.h - self.state_outlet.h,
                     Qdot=Q_sc,
                     dT_sec=dT_sec_sc,
@@ -445,7 +445,7 @@ class MVB_Condenser(BasicHX, abc.ABC):
             fs_state.set(name="Con_U_sh", value=U)
             if self.model_approach.lower() == "ntu":
                 W_sec = Q_sh / dT_sec_sh
-                A_sh,_  = self.detailed_epsNTU(
+                A_sh,_,_  = self.detailed_epsNTU(
                     dh=self.state_inlet.h - state_q1.h,
                     Qdot=Q_sh,
                     dT_sec=dT_sec_sh,
