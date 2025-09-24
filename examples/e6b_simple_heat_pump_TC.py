@@ -1,7 +1,7 @@
 # # Example for a heat pump with a standard cycle
 from vclibpy.components.compressors import Okasha_CO2_Rec
 from vclibpy.datamodels import Inputs, FlowsheetState
-from vclibpy.flowsheets import BaseCycleTC, StandardCycleTC
+from vclibpy.flowsheets import BaseCycleTC, StandardCycleTC, StandardCycle
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -36,12 +36,98 @@ def save_state_to_excel(fs_state: FlowsheetState, inputs: Inputs, save_path: Pat
 
     print(f"✅ Results successfully saved to: {full_path}")
 
+
+def save_plot_data_to_csv(flowsheet: StandardCycleTC, fs_state: FlowsheetState, save_path: Path):
+
+    """
+
+    Sammelt und speichert alle relevanten Datenpunkte für T-h- und log(p)-h-Diagramme in einer CSV-Datei.
+
+    """
+
+    print("\n--- Erstelle Plot-Daten für CSV-Export ---")
+
+    try:
+
+        all_plot_points = []
+
+        # Teil 1 & 2: Kreislaufpunkte und Sättigungslinien (unverändert)
+
+        cycle_states = flowsheet.get_states_in_order_for_plotting()
+
+        for i, s in enumerate(cycle_states):
+            all_plot_points.append(
+                {'label': f'cycle_point_{i + 1}', 'h_kJ_kg': s.h / 1000, 'T_C': s.T - 273.15, 'p_bar': s.p / 1e5})
+
+        h_sat = flowsheet.med_prop.get_two_phase_limits('h')
+        T_sat = flowsheet.med_prop.get_two_phase_limits('T')
+        p_sat = flowsheet.med_prop.get_two_phase_limits('p')
+
+        split_idx = len(h_sat) // 2
+        for i in range(split_idx):
+            all_plot_points.append({'label': 'sat_liquid', 'h_kJ_kg': h_sat[i] / 1000, 'T_C': T_sat[i] - 273.15, 'p_bar': p_sat[i] / 1e5})
+
+        for i in range(split_idx, len(h_sat)):
+            all_plot_points.append({'label': 'sat_vapor', 'h_kJ_kg': h_sat[i] / 1000, 'T_C': T_sat[i] - 273.15, 'p_bar': p_sat[i] / 1e5})
+
+
+
+        # Teil 3: KORREKTUR - Zugriff auf das fs_state Objekt
+
+        # Gaskühler/Kondensator Sekundärseite
+        all_plot_points.append({
+        'label': 'sec_condenser_in',
+        'h_kJ_kg': flowsheet.condenser.state_outlet.h / 1000,
+        'T_C': fs_state.get('SEC_T_con_in').value, # KORREKTUR: Wert aus fs_state (bereits in °C)
+        'p_bar': None
+        })
+
+        all_plot_points.append({
+        'label': 'sec_condenser_out',
+        'h_kJ_kg': flowsheet.condenser.state_inlet.h / 1000,
+        'T_C': fs_state.get('SEC_T_con_out').value, # KORREKTUR: Wert aus fs_state (bereits in °C)
+        'p_bar': None
+        })
+
+        # Verdampfer Sekundärseite
+        all_plot_points.append({
+        'label': 'sec_evaporator_in',
+        'h_kJ_kg': flowsheet.evaporator.state_outlet.h / 1000,
+        'T_C': fs_state.get('SEC_T_eva_in').value, # KORREKTUR: Wert aus fs_state (bereits in °C)
+        'p_bar': None
+        })
+
+        all_plot_points.append({
+        'label': 'sec_evaporator_out',
+        'h_kJ_kg': flowsheet.evaporator.state_inlet.h / 1000,
+        'T_C': fs_state.get('SEC_T_eva_out').value, # KORREKTUR: Wert aus fs_state (bereits in °C)
+        'p_bar': None
+        })
+
+        # Teil 4: Speichern (unverändert)
+        df_plot = pd.DataFrame(all_plot_points)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_name = f"plot_data_{timestamp}.csv"
+        csv_path = save_path / file_name
+        df_plot.to_csv(csv_path, sep=';', decimal='.', index=False)
+        print(f"✅ Plot-Daten erfolgreich gespeichert in: {csv_path}")
+
+        return csv_path
+
+
+
+    except Exception as e:
+        import sys
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        print(f"\n--- 🚨 FEHLER: Plot-Daten konnten nicht gespeichert werden. Grund: {e} (in Zeile {exc_tb.tb_lineno}) ---")
+        return None
+
 def main():
     from vclibpy.flowsheets import BaseCycle, StandardCycleTC
     from vclibpy.components.heat_exchangers import mvb_new
     from vclibpy.components.heat_exchangers import heat_transfer
     condenser = mvb_new.GasCooler(
-        A=9.68283841767566,#0.986125012,
+        A=23.216104807075638,#0.986125012,
         secondary_medium="air",
         flow_type="counter",
         ratio_outer_to_inner_area=1,
@@ -56,7 +142,7 @@ def main():
     )
 
     evaporator = mvb_new.MVB_Evaporator(
-        A=5.29090398681032,
+        A=11.945504175323805,
         secondary_medium="air",
         flow_type="counter",
         ratio_outer_to_inner_area=1,
@@ -81,7 +167,7 @@ def main():
     from vclibpy.components.compressors import ConstantEffectivenessCompressor
     compressor = ConstantEffectivenessCompressor(
         N_max=50,
-        V_h=4.56068262240451E-06,
+        V_h=1.2455496208978002E-05,
         eta_isentropic=0.7,
         lambda_h=0.9,
         eta_mech=1.0,
@@ -99,12 +185,14 @@ def main():
         #fix_speed=False,
         #fix_m_flow_con=False,
         #fix_m_flow_eva=False,
-        T_eva_in=19.4170742 + 273.15,#10 + 273.15,
-        T_con_in=24.5564436 + 273.15,#25 + 273.15,
+        T_eva_in=5 + 273.15,#10 + 273.15,
+        T_eva_out=0 + 273.15,
+        T_con_in=20 + 273.15,#25 + 273.15,
+        T_con_out=65 + 273.15,
         dT_eva_superheating=10,
         dT_con_subcooling=0,
-        m_flow_eva=0.93344081292099,
-        m_flow_con=1.01893840012639,
+        m_flow_eva=1.382051529141196,
+        m_flow_con=0.2206134834477022,
         n=1,
         #T_eva_out=10 + 273.15 -5,
         #T_con_out=273.15+40,
@@ -121,6 +209,8 @@ def main():
     #print(fs_state)
 
     save_state_to_excel(fs_state=fs_state, inputs=inputs, save_path=results_path)
+    save_plot_data_to_csv(flowsheet, fs_state, save_path=results_path)
+
 
 
 if __name__ == "__main__":
