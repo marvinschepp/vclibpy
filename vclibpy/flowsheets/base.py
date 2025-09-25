@@ -150,7 +150,7 @@ class BaseCycle:
                         logger.error("RunTimeError")
                         return self.set_default_state(inputs, start_time, "RunTimeError")
 
-                    if T_con_next > Tc - 10:
+                    if T_con_next > Tc - 4:
                         if inputs.fix_speed == float(True):
                             adjust_n = True
                             break
@@ -873,9 +873,9 @@ class BaseCycleTC(BaseCycle):
                     continue
 
                 current_cop = self.condenser.calc_Q_flow() / self.calc_electrical_power(fs_state=fs_state, inputs=inputs)
-                '''q4_cop_res["q4"].append(q4_next)
+                q4_cop_res["q4"].append(q4_next)
                 q4_cop_res["COP"].append(current_cop)
-                if q4_next < 0.5:
+                '''if q4_next < 0.5:
                     q4_next += q4_step
                     continue
                 else:
@@ -886,7 +886,11 @@ class BaseCycleTC(BaseCycle):
                     #best_fs_state = deepcopy(fs_state)
 
                     q4_next = best_q4 + q4_step
+                elif abs(current_cop - best_cop) < 0.002:
+                    best_cop = current_cop
+                    best_q4 = q4_next
 
+                    q4_next = best_q4 + q4_step
                 else:
                     found = True
                     q4_next = best_q4
@@ -952,8 +956,8 @@ class BaseCycleTC(BaseCycle):
             )
             fs_state.set(name="relative_compressor_speed", value=n_input)
 
-        #df = pd.DataFrame(q4_cop_res)
-        #df.to_csv(os.path.join(r"D:\11_Auslegung_CO2\TP_2", "q4_cop_res.csv"), index=False, sep=";", decimal=",")
+        df = pd.DataFrame(q4_cop_res)
+        df.to_csv(os.path.join(r"D:\11_Auslegung_CO2", "q4_cop_res.csv"), index=False, sep=";", decimal=",")
 
         if self.flowsheet_name == "IHX":
             self.calc_missing_IHX_states(inputs, fs_state, **kwargs)
