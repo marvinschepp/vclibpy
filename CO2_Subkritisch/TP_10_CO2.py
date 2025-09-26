@@ -124,6 +124,14 @@ def main():
     from vclibpy.components.heat_exchangers import mvb_new
     from vclibpy.components.heat_exchangers import heat_transfer
 
+    A_con_oka_2 = 19.75262150362
+    A_eva_oka_2 = 10.9940748710396
+    V_h_oka_2 = 8.6614346007427E-06
+
+    A_con_const_2 = 20.2628558750705
+    A_eva_const_2 = 11.3432789455855
+    V_h_const_2 = 7.903384455858833E-06
+
     A_con_oka_4 = 46.3228647344602
     A_eva_oka_4 = 30.7527707916683
     V_h_oka_4 = 1.91565645203768E-05
