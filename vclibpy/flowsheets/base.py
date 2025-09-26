@@ -304,7 +304,7 @@ class BaseCycle:
         fs_state.set("ErrorCon", value=error_con)
         fs_state.set("ErrorEva", value=error_eva)
         fs_state.set(
-            name="P_el", value=P_el / 1000, unit="W",
+            name="P_el", value=P_el, unit="W",
             description="Power consumption"
         )
         fs_state.set(
@@ -318,11 +318,11 @@ class BaseCycle:
         fs_state.set(name="COP_Carnot", value=COP_carnot,
                      unit="-", description="maximal Coefficient of performance")
         fs_state.set(
-            name="Q_con", value=Q_con / 1000, unit="W",
+            name="Q_con", value=Q_con, unit="W",
             description="Condenser refrigerant heat flow rate"
         )
         fs_state.set(
-            name="Q_eva", value=Q_eva / 1000, unit="W",
+            name="Q_eva", value=Q_eva, unit="W",
             description="Evaporator refrigerant heat flow rate"
         )
 
