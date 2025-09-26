@@ -206,7 +206,7 @@ def main():
         T_eva_in=11.8041499 + 273.15,
         T_con_in=16.524669 + 273.15,
         dT_eva_superheating=10,
-        dT_con_subcooling=0,
+        dT_con_subcooling=5,
         m_flow_eva=m_eva_const,
         m_flow_con=m_con_const,
         n=1,
@@ -217,7 +217,7 @@ def main():
 
     #inputs.set(name="q4", value=0.3, description="Quality of refrigerant at exp_valve outlet")
 
-    results_path = Path(r"D:\11_Auslegung_CO2\TP_9\AP4\Const")
+    results_path = Path(r"D:\11_Auslegung_CO2\TP_9\AP4\Const_Sub")
     results_path.mkdir(parents=True, exist_ok=True)
     print(f"Saving results in '{results_path.absolute()}'.")
 

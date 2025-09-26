@@ -184,7 +184,7 @@ def main():
     '''from vclibpy.components.compressors import ConstantEffectivenessCompressor
     compressor = ConstantEffectivenessCompressor(
         N_max=50,
-        V_h=V_h_const_4,
+        V_h=V_h_const_6,
         eta_isentropic=0.7,
         lambda_h=0.9,
         eta_mech=1.0,
@@ -217,7 +217,7 @@ def main():
 
     #inputs.set(name="q4", value=0.3, description="Quality of refrigerant at exp_valve outlet")
 
-    results_path = Path(r"D:\11_Auslegung_CO2\TP_5\AP4\Const")
+    results_path = Path(r"D:\11_Auslegung_CO2\TP_5\AP6\Oka_Sub")
     results_path.mkdir(parents=True, exist_ok=True)
     print(f"Saving results in '{results_path.absolute()}'.")
 

@@ -123,6 +123,14 @@ def main():
     from vclibpy.components.heat_exchangers import mvb_new
     from vclibpy.components.heat_exchangers import heat_transfer
 
+    A_con_guth_2 = 11.4009514209421
+    A_eva_guth_2 = 11.3097968384393
+    V_h_guth_2 = 3.81308014715823E-05
+
+    A_con_const_2 = 11.3497393360869
+    A_eva_const_2 = 11.1676234397641
+    V_h_const_2 = 3.6901371390988E-05
+
     A_con_guth_4 = 21.4557008017595
     A_eva_guth_4 = 30.8441537395443
     V_h_guth_4 = 8.36749404620234E-05
@@ -145,7 +153,7 @@ def main():
     m_eva_const = 0.926504206156643
 
     condenser = mvb_new.MVB_Condenser(
-        A=A_con_const_4,
+        A=A_con_const_6,
         secondary_medium="air",
         flow_type="counter",
         ratio_outer_to_inner_area=1,
@@ -158,7 +166,7 @@ def main():
     )
 
     evaporator = mvb_new.MVB_Evaporator(
-        A=A_eva_const_4,
+        A=A_eva_const_6,
         secondary_medium="air",
         flow_type="counter",
         ratio_outer_to_inner_area=1,
@@ -176,14 +184,14 @@ def main():
     '''from vclibpy.components.compressors import Guth_R290_Scroll
     compressor = Guth_R290_Scroll(
         N_max=50,
-        V_h=V_h_guth_6,
+        V_h=V_h_guth_2,
         eta_mech=1.0,
     )'''
 
     from vclibpy.components.compressors import ConstantEffectivenessCompressor
     compressor = ConstantEffectivenessCompressor(
         N_max=50,
-        V_h=V_h_const_4,
+        V_h=V_h_const_6,
         eta_isentropic=0.7,
         lambda_h=0.9,
         eta_mech=1.0,
@@ -215,7 +223,7 @@ def main():
 
     #inputs.set(name="q4", value=0.3, description="Quality of refrigerant at exp_valve outlet")
 
-    results_path = Path(r"D:\12_Auslegung_R290\TP_8\AP4\Const")
+    results_path = Path(r"D:\12_Auslegung_R290\TP_8\AP6\Const")
     results_path.mkdir(parents=True, exist_ok=True)
     print(f"Saving results in '{results_path.absolute()}'.")
 
