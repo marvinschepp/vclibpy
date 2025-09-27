@@ -957,7 +957,9 @@ class BaseCycleTC(BaseCycle):
             fs_state.set(name="relative_compressor_speed", value=n_input)
 
         df = pd.DataFrame(q4_cop_res)
-        df.to_csv(os.path.join(r"D:\11_Auslegung_CO2", "q4_cop_res.csv"), index=False, sep=";", decimal=",")
+        if save_path_plots:
+            output_file_path = save_path_plots.joinpath("q4_cop_res.csv")
+            df.to_csv(output_file_path, index=False, sep=";", decimal=",")
 
         if self.flowsheet_name == "IHX":
             self.calc_missing_IHX_states(inputs, fs_state, **kwargs)
