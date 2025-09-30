@@ -174,6 +174,7 @@ class Inputs(VariableContainer):
             dT_eva_superheating: float = np.nan,
             dT_con_subcooling: float = np.nan,
             Q_con: float = np.nan,
+            Q_eva: float = np.nan,
             T_eva_out: float = np.nan,
             T_con_out: float = np.nan,
             n: float = np.nan,
@@ -247,6 +248,13 @@ class Inputs(VariableContainer):
         self.set(
             name="Q_con",
             value=Q_con,
+            unit="W",
+            description="heating power_set"
+        )
+
+        self.set(
+            name="Q_eva",
+            value=Q_eva,
             unit="W",
             description="heating power_set"
         )

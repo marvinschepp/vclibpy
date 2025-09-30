@@ -118,7 +118,11 @@ class StandardCycleTC(BaseCycleTC):
                 self.condenser.state_inlet = self.compressor.state_outlet
                 self.compressor.calc_m_flow(inputs=inputs, fs_state=fs_state)
                 self.condenser.m_flow = self.compressor.m_flow
-                error = self.condenser.calc_Q_flow() - inputs.Q_con
+                self.evaporator.m_flow = self.compressor.m_flow
+                if inputs.Q_eva:
+                    error = self.evaporator.calc_Q_flow() - inputs.Q_eva
+                else:
+                    error = self.condenser.calc_Q_flow() - inputs.Q_con
 
                 if abs(error) < max_error:
                     break
