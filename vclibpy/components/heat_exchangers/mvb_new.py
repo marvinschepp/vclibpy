@@ -79,7 +79,7 @@ class BasicHX(HeatExchanger, abc.ABC):
         rho_seg = 0.5 * (state_in.d + state_out.d)
         dyn_visc_seg = tra_prop_seg.dyn_vis
         A_flow = np.pi / 4 * self.d_hyd ** 2
-        c = self.m_flow / (rho_seg * A_flow)
+        c = self.m_flow / (4 * rho_seg * A_flow)
         l_seg = A_seg / (np.pi * self.d_outer)
 
         # First, we calculate the Reynolds number:
@@ -237,12 +237,14 @@ class BasicHX(HeatExchanger, abc.ABC):
                     dp_total += dp_seg
                     p_next = state_in_element.p - dp_seg
                     if p_next < 7377300:
-                        continue
-                    state_out_element = self.med_prop.calc_state("PH", p_next, state_out_element.h)
+                        print(f"Druck im Gaskühler-Segment unterkritisch durch Druckverlust. p_next={p_next}")
+                        return np.inf, -1, dp_total, state_in_element,
+                    state_out_element = self.med_prop.calc_state("PH", p_next, state_in_element.h - dh_element)
 
             state_in_element = state_out_element
             T_sec_in_element -= dT_sec_element
-        return A, np.min(dT_mins), dp_total
+
+        return A, np.min(dT_mins), dp_total, state_in_element
 
     def calc_NTU(
             self,
@@ -582,7 +584,7 @@ class MVB_Evaporator(BasicHX, abc.ABC):
             fs_state.set(name="Eva_U_lat", value=U)
             if self.model_approach.lower() == "ntu":
                 W_sec = Q_lat / dT_sec_lat
-                A_lat,_,_  = self.detailed_epsNTU(
+                A_lat,_,_,_  = self.detailed_epsNTU(
                     dh=self.state_inlet.h - state_q1.h,
                     Qdot=Q_lat,
                     dT_sec=-dT_sec_lat,
@@ -608,7 +610,7 @@ class MVB_Evaporator(BasicHX, abc.ABC):
             fs_state.set(name="Eva_U_gas", value=U)
             if self.model_approach.lower() == "ntu":
                 W_sec = Q_sh / dT_sec_sh
-                A_sh,_,_  = self.detailed_epsNTU(
+                A_sh,_,_,_  = self.detailed_epsNTU(
                     dh=state_q1.h - self.state_outlet.h,
                     Qdot=Q_sh,
                     dT_sec=-dT_sec_sh,
@@ -674,7 +676,7 @@ class GasCooler(BasicHX, abc.ABC):
         dT_sec = inputs.T_con_out - inputs.T_con_in
         W_sec = Q/dT_sec
 
-        A_calc, pinch, dp_total = self.detailed_epsNTU(
+        A_calc, pinch, dp_total, final_state = self.detailed_epsNTU(
             dh=dh_ref,
             Qdot=Q,
             dT_sec=dT_sec,
@@ -685,8 +687,9 @@ class GasCooler(BasicHX, abc.ABC):
             n_elements=self.n_elemente
         )
 
-        p_outlet = self.state_outlet.p - dp_total
-        self.state_outlet = self.med_prop.calc_state("PH", p_outlet, self.state_outlet.h)
+        #p_outlet = self.state_outlet.p - dp_total
+        #self.state_outlet = self.med_prop.calc_state("PH", p_outlet, self.state_outlet.h)
+        self.state_outlet = final_state
 
         error = (self.A / A_calc - 1) * 100
 
@@ -696,7 +699,7 @@ class GasCooler(BasicHX, abc.ABC):
                      description="Area for total heat exchange in evaporator")
         fs_state.set(name="Con_Pinch", value=pinch, unit="K",
                      description="Minimal temperature difference in gas cooler")
-        fs_state.set(name="delta_p", value=dp_total / 10e5, unit="bar",
+        fs_state.set(name="delta_p", value=dp_total / 1e5, unit="bar",
                      description="Total pressure drop in gas cooler")
 
 
