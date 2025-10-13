@@ -2,6 +2,7 @@ from vclibpy.flowsheets import BaseCycle
 from vclibpy.datamodels import FlowsheetState, Inputs
 from vclibpy.components.compressors import Compressor
 from vclibpy.components.expansion_valves import ExpansionValve
+import numpy as np
 
 
 class StandardCycle(BaseCycle):
@@ -100,6 +101,10 @@ class StandardCycle(BaseCycle):
                 self.condenser.state_inlet = self.compressor.state_outlet
                 self.compressor.calc_m_flow(inputs=inputs, fs_state=fs_state)
                 self.condenser.m_flow = self.compressor.m_flow
+                self.evaporator.m_flow = self.compressor.m_flow
+
+                #error = self.evaporator.calc_Q_flow() - inputs.Q_eva
+
                 error = self.condenser.calc_Q_flow() - inputs.Q_con
 
                 if abs(error) < max_error:

@@ -723,7 +723,7 @@ class BaseCycleTC(BaseCycle):
             temp_num_iteration = 0
 
             if np.isnan(self.q4_set):
-                q4_next = 0.1
+                q4_next = 0.15
             else:
                 q4_next = self.q4_set
 
@@ -875,7 +875,7 @@ class BaseCycleTC(BaseCycle):
                 current_cop = self.condenser.calc_Q_flow() / self.calc_electrical_power(fs_state=fs_state, inputs=inputs)
                 q4_cop_res["q4"].append(q4_next)
                 q4_cop_res["COP"].append(current_cop)
-                '''if q4_next < 0.5:
+                '''if q4_next < 0.6:
                     q4_next += q4_step
                     continue
                 else:

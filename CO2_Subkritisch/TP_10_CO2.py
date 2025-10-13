@@ -124,25 +124,25 @@ def main():
     from vclibpy.components.heat_exchangers import mvb_new
     from vclibpy.components.heat_exchangers import heat_transfer
 
-    A_con_oka_2 = 19.75262150362
-    A_eva_oka_2 = 10.9940748710396
-    V_h_oka_2 = 8.6614346007427E-06
+    A_con_oka_2 = 21.8597711259926
+    A_eva_oka_2 = 12.1668893948178
+    V_h_oka_2 = 9.58540677186637E-06
 
-    A_con_const_2 = 20.2628558750705
-    A_eva_const_2 = 11.3432789455855
-    V_h_const_2 = 7.903384455858833E-06
+    A_con_const_2 = 21.7320596422347
+    A_eva_const_2 = 12.1657488018342
+    V_h_const_2 = 8.47643705457312E-06
 
-    A_con_oka_4 = 46.3228647344602
-    A_eva_oka_4 = 30.7527707916683
-    V_h_oka_4 = 1.91565645203768E-05
+    A_con_oka_4 = 47.3932808693005
+    A_eva_oka_4 = 31.4623901974982
+    V_h_oka_4 = 1.95834610861818E-05
 
     A_con_oka_6 = 6.77961238570236
     A_eva_oka_6 = 7.57119235043258
     V_h_oka_6 = 8.99983781814193E-06
 
-    A_con_const_4 = 48.0041947850241
-    A_eva_const_4 = 32.1418700052833
-    V_h_const_4 = 1.65572283091709E-05
+    A_con_const_4 = 46.9780265354255
+    A_eva_const_4 = 31.4547849157258
+    V_h_const_4 = 1.62032904488776E-05
 
     A_con_const_6 = 7.07323327063744
     A_eva_const_6 = 7.94778647340534
@@ -162,7 +162,7 @@ def main():
     m_eva_const = 0.87944217829006
 
     condenser = mvb_new.MVB_Condenser(
-        A=A_con_oka_7,
+        A=A_con_const_6,
         secondary_medium="air",
         flow_type="counter",
         ratio_outer_to_inner_area=1,
@@ -175,7 +175,7 @@ def main():
     )
 
     evaporator = mvb_new.MVB_Evaporator(
-        A=A_eva_oka_7,
+        A=A_eva_const_6,
         secondary_medium="air",
         flow_type="counter",
         ratio_outer_to_inner_area=1,
@@ -190,21 +190,21 @@ def main():
     from vclibpy.components.expansion_valves import Bernoulli
     expansion_valve = Bernoulli(A=0.1)
 
-    from vclibpy.components.compressors import ConstantEffectivenessCompressor, Okasha_CO2_Rec
+    '''from vclibpy.components.compressors import ConstantEffectivenessCompressor, Okasha_CO2_Rec
     compressor = Okasha_CO2_Rec(
-        N_max=50,
-        V_h=V_h_oka_7,
+        N_max=20,
+        V_h=V_h_oka_6,
         eta_mech=1.0,
-    )
+    )'''
 
-    '''from vclibpy.components.compressors import ConstantEffectivenessCompressor
+    from vclibpy.components.compressors import ConstantEffectivenessCompressor
     compressor = ConstantEffectivenessCompressor(
-        N_max=50,
-        V_h=V_h_const_7,
+        N_max=20,
+        V_h=V_h_const_6,
         eta_isentropic=0.7,
         lambda_h=0.9,
         eta_mech=1.0,
-    )'''
+    )
 
     # Now, we can plug everything into the flowsheet:
     flowsheet = StandardCycle(
@@ -216,24 +216,24 @@ def main():
     )
 
     inputs = Inputs(
-        fix_speed=False,
+        #fix_speed=False,
         #fix_m_flow_con=False,
         #fix_m_flow_eva=False,
         T_eva_in=14.0322332 + 273.15,
         T_con_in=17.5941378 + 273.15,
         dT_eva_superheating=10,
         dT_con_subcooling=5,
-        m_flow_eva=m_eva_oka,
-        m_flow_con=m_con_oka,
+        m_flow_eva=m_eva_const,
+        m_flow_con=m_con_const,
         n=1,
         #T_eva_out=10 + 273.15 -5,
         #T_con_out=273.15+40,
-        Q_con=2513.221,  # W
+        #Q_con=2513.221,  # W
     )
 
     #inputs.set(name="q4", value=0.3, description="Quality of refrigerant at exp_valve outlet")
 
-    results_path = Path(r"D:\11_Auslegung_CO2\TP_10\AP7\Okasha_Sub")
+    results_path = Path(r"D:\11_Auslegung_CO2\TP_10\AP6\Const_Fix")
     results_path.mkdir(parents=True, exist_ok=True)
     print(f"Saving results in '{results_path.absolute()}'.")
 
