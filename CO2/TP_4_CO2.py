@@ -230,8 +230,8 @@ def main():
         n=1,
         #T_eva_out=10 + 273.15 -5,
         #T_con_out=273.15+40,
-        Q_con=16962.883,  # W
-        #Q_eva=13458.179
+        #Q_con=16962.883,  # W
+        Q_eva=13458.179
     )
 
     #inputs.set(name="q4", value=0.3, description="Quality of refrigerant at exp_valve outlet")
